@@ -1,7 +1,6 @@
 import {
   GroupRegistry,
   buildTrips,
-  journeysForRoute,
   planSearch,
   validateSpec,
   type ResultSummary,
@@ -51,13 +50,9 @@ export async function runSearch(spec: SearchSpec, opts: FetchOptions = {}): Prom
   const providers = await providersFor(spec.providers);
   if (!providers.length) throw new Error("No flight data providers are enabled. See docs/DATA_SOURCES.md.");
   const { faresByLeg, stats } = await fetchPlan(plan, providers, opts);
-  const trips = buildTrips(spec, plan, faresByLeg);
-  const routes = plan.routes.map((r) => ({
-    id: r.id,
-    direction: r.direction,
-    label: r.label,
-    journeys: journeysForRoute(r, faresByLeg, spec).length,
-  }));
+  const counts: Record<string, number> = {};
+  const trips = buildTrips(spec, plan, faresByLeg, { onRoute: (id, n) => (counts[id] = n) });
+  const routes = plan.routes.map((r) => ({ id: r.id, direction: r.direction, label: r.label, journeys: counts[r.id] ?? 0 }));
   return {
     spec,
     trips,

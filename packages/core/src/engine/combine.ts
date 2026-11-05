@@ -15,6 +15,8 @@ export interface CombineOptions {
   tripLimit?: number;
   /** Value of an hour of travel time, in GBP, for the "best" score. */
   valueOfHourGBP?: number;
+  /** Called with the number of journeys each route produced. */
+  onRoute?: (routeId: string, journeys: number) => void;
 }
 
 interface Partial {
@@ -104,45 +106,73 @@ export function journeysForRoute(
   const fareSets = route.legKeys.map((k) => (faresByLeg[k] ?? []).filter((f) => f.slices.length === 1 && sliceOk(f.slices[0], spec)));
   if (fareSets.some((s) => !s.length)) return [];
 
-  let partials: Partial[] = fareSets[0].map((f) => ({
-    steps: [{ type: "flight", slice: f.slices[0], fareId: f.id, provider: f.provider }],
-    fares: [f],
-    price: convert(f.price, f.currency, spec.currency),
-    slices: [f.slices[0]],
-  }));
+  let partials: Partial[] = prune(
+    fareSets[0].map((f) => ({
+      steps: [{ type: "flight", slice: f.slices[0], fareId: f.id, provider: f.provider }],
+      fares: [f],
+      price: convert(f.price, f.currency, spec.currency),
+      slices: [f.slices[0]],
+    })),
+    fareSets.length > 1 ? beam * 2 : Infinity,
+  );
+
+  // Ground transfers looked up once per airport pair.
+  const transferCache = new Map<string, GroundTransfer | null>();
+  const transferFor = (a: string, b: string): GroundTransfer | null | undefined => {
+    if (a === b) return undefined;
+    if (!spec.groundTransfers) return null;
+    const k = `${a}-${b}`;
+    if (!transferCache.has(k)) {
+      const t = groundTransfer(a, b, opts.transfers);
+      transferCache.set(k, t && t.minutes <= spec.maxGroundHours * 60 ? t : null);
+    }
+    return transferCache.get(k)!;
+  };
 
   for (let hop = 1; hop < fareSets.length; hop++) {
     const rule = route.stops[hop - 1];
+    // Next-hop fares by departure airport, sorted by departure time.
+    const byAirport = new Map<string, { t: number; f: Fare; price: number }[]>();
+    for (const f of fareSets[hop]) {
+      const list = byAirport.get(f.slices[0].from) ?? byAirport.set(f.slices[0].from, []).get(f.slices[0].from)!;
+      list.push({ t: localMinutes(f.slices[0].departLocal), f, price: convert(f.price, f.currency, spec.currency) });
+    }
+    for (const list of byAirport.values()) list.sort((a, b) => a.t - b.t);
+    const maxGap = Math.max(spec.maxLayoverHours * 60, (rule.maxNights + 1) * 1440);
+    const perPartial = 25;
+
     const next: Partial[] = [];
     for (const p of partials) {
       const prev = p.slices[p.slices.length - 1];
       const arr = localMinutes(prev.arriveLocal);
-      for (const f of fareSets[hop]) {
+      const options: { f: Fare; price: number; gap: number; transfer?: GroundTransfer; groundPrice: number }[] = [];
+      for (const [from, list] of byAirport) {
+        const transfer = transferFor(prev.to, from);
+        if (transfer === null) continue;
+        const lo = arr + spec.minSelfTransferMinutes + (transfer?.minutes ?? 0);
+        const hi = arr + maxGap;
+        let i = lowerBound(list, lo);
+        for (; i < list.length && list[i].t <= hi; i++) {
+          const { f, t, price } = list[i];
+          const s = f.slices[0];
+          const gap = t - arr;
+          const nights = daysBetween(datePart(prev.arriveLocal), datePart(s.departLocal));
+          const short = gap <= spec.maxLayoverHours * 60;
+          // A planned stay must give at least half a day on the ground.
+          const stayOk = nights >= Math.max(1, rule.minNights) && nights <= rule.maxNights && gap >= 12 * 60;
+          const ok = rule.maxNights === 0 ? short : rule.minNights === 0 ? short || stayOk : stayOk;
+          if (!ok) continue;
+          const groundPrice = transfer ? convert(transfer.cost, transfer.currency, spec.currency) * pax : 0;
+          options.push({ f, price, gap, transfer, groundPrice });
+        }
+      }
+      options.sort((a, b) => a.price + a.groundPrice - (b.price + b.groundPrice));
+      for (const { f, price, gap, transfer, groundPrice } of options.slice(0, perPartial)) {
         const s = f.slices[0];
-        let transfer: GroundTransfer | undefined;
-        if (s.from !== prev.to) {
-          if (!spec.groundTransfers) continue;
-          transfer = groundTransfer(prev.to, s.from, opts.transfers);
-          if (!transfer || transfer.minutes > spec.maxGroundHours * 60) continue;
-        }
-        const gap = localMinutes(s.departLocal) - arr;
-        const needed = spec.minSelfTransferMinutes + (transfer?.minutes ?? 0);
-        if (gap < needed) continue;
         const nights = daysBetween(datePart(prev.arriveLocal), datePart(s.departLocal));
-        const short = gap <= spec.maxLayoverHours * 60;
-        // A planned stay must give at least half a day on the ground.
-        const stayOk = nights >= Math.max(1, rule.minNights) && nights <= rule.maxNights && gap >= 12 * 60;
-        let ok: boolean;
-        if (rule.maxNights === 0) ok = short;
-        else if (rule.minNights === 0) ok = short || stayOk;
-        else ok = stayOk;
-        if (!ok) continue;
-        const isStopover = !(rule.minNights === 0 && short);
+        const isStopover = !(rule.minNights === 0 && gap <= spec.maxLayoverHours * 60);
         const steps: Step[] = [...p.steps];
-        if (transfer) {
-          const price = convert(transfer.cost, transfer.currency, spec.currency) * pax;
-          steps.push({ type: "ground", transfer, price });
-        }
+        if (transfer) steps.push({ type: "ground", transfer, price: groundPrice });
         steps.push({
           type: "layover",
           at: transfer ? `${prev.to}→${s.from}` : prev.to,
@@ -152,13 +182,7 @@ export function journeysForRoute(
           nights: isStopover ? Math.max(nights, 1) : 0,
         });
         steps.push({ type: "flight", slice: s, fareId: f.id, provider: f.provider });
-        const groundPrice = transfer ? convert(transfer.cost, transfer.currency, spec.currency) * pax : 0;
-        next.push({
-          steps,
-          fares: [...p.fares, f],
-          price: p.price + convert(f.price, f.currency, spec.currency) + groundPrice,
-          slices: [...p.slices, s],
-        });
+        next.push({ steps, fares: [...p.fares, f], price: p.price + price + groundPrice, slices: [...p.slices, s] });
       }
     }
     partials = prune(next, beam);
@@ -168,6 +192,17 @@ export function journeysForRoute(
   return partials
     .map((p) => ({ journey: makeJourney(p.steps), fares: p.fares, price: p.price }))
     .filter((j) => j.journey.stops <= spec.maxStops);
+}
+
+function lowerBound(list: { t: number }[], t: number): number {
+  let lo = 0;
+  let hi = list.length;
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1;
+    if (list[mid].t < t) lo = mid + 1;
+    else hi = mid;
+  }
+  return lo;
 }
 
 /** Keep the cheapest partials while making sure every departure date stays represented. */
@@ -232,7 +267,15 @@ export function buildTrips(
   const journeyLimit = opts.journeyLimit ?? 300;
   const tripLimit = opts.tripLimit ?? 600;
   const voh = opts.valueOfHourGBP;
-  const outs = plan.routes.filter((r) => r.direction === "out").flatMap((r) => journeysForRoute(r, faresByLeg, spec, opts));
+  const journeys = (dir: "out" | "back") =>
+    plan.routes
+      .filter((r) => r.direction === dir)
+      .flatMap((r) => {
+        const js = journeysForRoute(r, faresByLeg, spec, opts);
+        opts.onRoute?.(r.id, js.length);
+        return js;
+      });
+  const outs = journeys("out");
   const trips = new Map<string, Trip>();
   const add = (t: Omit<Trip, "id" | "score" | "tags">) => {
     const id = tripId(t.fares);
@@ -245,7 +288,7 @@ export function buildTrips(
   if (spec.return.type === "oneway") {
     for (const o of outs) add({ price: round(o.price), currency: spec.currency, out: o.journey, fares: o.fares });
   } else {
-    const backs = plan.routes.filter((r) => r.direction === "back").flatMap((r) => journeysForRoute(r, faresByLeg, spec, opts));
+    const backs = journeys("back");
     const topOut = diverse(outs, journeyLimit, spec.currency, voh);
     const topBack = diverse(backs, journeyLimit, spec.currency, voh);
     const bw = backWindow(spec)!;
