@@ -1,8 +1,8 @@
 import type { ProviderInfo } from "@flightbuzz/core";
 import { config } from "../config.ts";
 import { demoProvider } from "./demo.ts";
-import { googleProvider, googleStatus } from "./google.ts";
-import { kiwiProvider } from "./kiwi.ts";
+import { googleGate, googleProvider } from "./google.ts";
+import { kiwiGate, kiwiProvider } from "./kiwi.ts";
 import type { FlightProvider } from "./types.ts";
 
 /** Every provider FlightBuzz knows. Skyscanner and Kayak are deep links only (see docs/DATA_SOURCES.md). */
@@ -25,7 +25,7 @@ export async function providerInfo(): Promise<ProviderInfo[]> {
       configured: configured[i],
       enabled: configured[i] && (await isEnabled(p, realConfigured)),
       capabilities: p.capabilities,
-      note: p.id === "google" ? `${p.note} ${googleNote()}`.trim() : p.note,
+      note: p.id === "google" ? `${p.note} ${googleGate.note()}` : p.id === "kiwi" ? `${p.note} ${kiwiGate.note()}` : p.note,
     })),
   );
 }
@@ -38,8 +38,3 @@ export async function providersFor(requested: string[]): Promise<FlightProvider[
   return pairs.filter((x) => x.info.enabled).map((x) => x.p);
 }
 
-function googleNote(): string {
-  const st = googleStatus();
-  const used = `${st.usedToday} requests today.`;
-  return st.blockedUntil ? `Paused until ${st.blockedUntil.slice(11, 16)} UTC after ${st.blockReason}. ${used}` : used;
-}

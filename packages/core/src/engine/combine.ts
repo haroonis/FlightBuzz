@@ -49,6 +49,7 @@ export function makeJourney(steps: Step[]): Journey {
       stops += segs.length - 1;
       travelMin += s.slice.durationMin;
       for (let i = 1; i < segs.length; i++) {
+        if (segs[i].selfTransfer) selfTransfers++;
         if (crossesNight(segs[i - 1].arriveLocal, segs[i].departLocal) && localMinutes(segs[i].departLocal) - localMinutes(segs[i - 1].arriveLocal) > 4 * 60)
           overnightLayovers++;
       }

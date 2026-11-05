@@ -27,9 +27,9 @@ To run as one server:
 npm run build && npm start   # serves the web app and API on :8787
 ```
 
-FlightBuzz uses **free sources only**. Google is fetched slowly on purpose: one request at a time, 45–80 s apart, with a 3-hour pause if Google ever pushes back. A big airport-group search therefore takes minutes rather than seconds, which suits the twice-daily refresh. See [docs/DATA_SOURCES.md](docs/DATA_SOURCES.md) for details and [.env.example](.env.example) for settings.
+FlightBuzz uses **free sources only**: Google Flights and Kiwi.com, through the same APIs their own websites use. Skyscanner and Kayak block automated access, so they appear as "check this price" links. Google is fetched slowly on purpose: one request at a time, 45–80 s apart, with a 3-hour pause if Google ever pushes back. A big airport-group search therefore takes minutes rather than seconds, which suits the twice-daily refresh. See [docs/DATA_SOURCES.md](docs/DATA_SOURCES.md) for details and [.env.example](.env.example) for settings.
 
-The only site the server needs to reach is `www.google.com`, plus `api.tequila.kiwi.com` if you have a Kiwi partner key.
+The server only needs to reach `www.google.com` (Google Flights) and `api.skypicker.com` (Kiwi).
 
 ## Search URLs
 
@@ -92,7 +92,8 @@ npm run data:airports  # rebuild data/*.json from OurAirports
 ## Roadmap
 
 - Travelpayouts cached-price pre-filter, so only promising dates are searched live
-- More free providers: Kiwi website GraphQL (self-transfers), Ryanair / Wizz Air
+- Checked-bag prices (Kiwi supports pricing with bags)
+- More free providers: Ryanair / Wizz Air
 - Price alerts (email or push) when a saved search drops below a target
 - Real timezone data for exact elapsed times across time zones
 - Multi-airport Google requests by encoding several airports per leg

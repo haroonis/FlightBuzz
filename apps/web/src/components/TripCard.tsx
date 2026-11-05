@@ -145,6 +145,7 @@ function Connection({ a, b }: { a: Segment; b: Segment }) {
       {long && <span className="pill warn">long layover</span>}
       {overnight && <span className="pill">overnight</span>}
       {a.to !== b.from && <span className="pill warn">change airport {a.to}→{b.from}</span>}
+      {b.selfTransfer && <span className="pill warn">self-transfer: collect bags &amp; check in again</span>}
     </div>
   );
 }

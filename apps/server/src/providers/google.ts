@@ -1,5 +1,6 @@
 import { googleFlightsUrl, localMinutes, type Fare, type LegQuery, type Segment } from "@flightbuzz/core";
 import { config } from "../config.ts";
+import { HttpStatusError, PoliteGate } from "./polite.ts";
 import { sliceDuration, type FlightProvider } from "./types.ts";
 
 /**
@@ -16,25 +17,10 @@ import { sliceDuration, type FlightProvider } from "./types.ts";
  *   - at most GOOGLE_DAILY_LIMIT requests per day (default 300)
  */
 
-let blockedUntil = 0;
-let blockReason = "";
-let day = "";
-let usedToday = 0;
-
-function today(): string {
-  return new Date().toISOString().slice(0, 10);
-}
-
-function isBlock(e: unknown): boolean {
-  const err = e as { name?: string; status?: number; message?: string };
-  if (err?.name === "CaptchaError") return true;
-  if (err?.status && [403, 429, 503].includes(err.status)) return true;
-  return /captcha|unusual traffic|429|too many/i.test(err?.message ?? "");
-}
-
-export function googleStatus() {
-  return { blockedUntil: blockedUntil > Date.now() ? new Date(blockedUntil).toISOString() : null, blockReason, usedToday: day === today() ? usedToday : 0 };
-}
+export const googleGate = new PoliteGate("google", () => ({
+  cooldownMinutes: config.googleCooldownMinutes,
+  dailyLimit: config.googleDailyLimit,
+}));
 
 type FF = typeof import("fast-flights-ts");
 let mod: FF | null | undefined;
@@ -89,13 +75,6 @@ export function googleRpcBody(q: LegQuery): string {
   return `f.req=${encodeURIComponent(JSON.stringify([null, JSON.stringify(filters)]))}`;
 }
 
-class GoogleHttpError extends Error {
-  constructor(public status: number, name = "HttpError") {
-    super(`Google answered HTTP ${status}`);
-    this.name = name;
-  }
-}
-
 export const googleProvider: FlightProvider = {
   id: "google",
   name: "Google Flights",
@@ -109,20 +88,8 @@ export const googleProvider: FlightProvider = {
   },
   configured: async () => !!(await load()),
   note: "Free, unofficial. One request per date covering up to 7 airports each side, sent slowly (45–80 s apart) with an automatic pause if Google pushes back.",
-  unavailable() {
-    if (Date.now() < blockedUntil) {
-      return `paused until ${new Date(blockedUntil).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })} after ${blockReason}; using cached prices`;
-    }
-    if (day === today() && usedToday >= config.googleDailyLimit) return `daily limit of ${config.googleDailyLimit} requests reached`;
-    return undefined;
-  },
-  onRequest() {
-    if (day !== today()) {
-      day = today();
-      usedToday = 0;
-    }
-    usedToday++;
-  },
+  unavailable: () => googleGate.unavailable(),
+  onRequest: () => googleGate.onRequest(),
   async search(q: LegQuery, ctx): Promise<Fare[]> {
     const ff = await load();
     if (!ff) throw new Error("fast-flights-ts is not installed");
@@ -141,15 +108,11 @@ export const googleProvider: FlightProvider = {
         signal: AbortSignal.any([AbortSignal.timeout(30_000), ...(ctx.signal ? [ctx.signal] : [])]),
       });
       const text = await res.text();
-      if (!res.ok) throw new GoogleHttpError(res.status);
-      if (text.includes("g-recaptcha") || text.includes('id="captcha"')) throw new GoogleHttpError(res.status, "CaptchaError");
+      if (!res.ok) throw new HttpStatusError(res.status, "Google");
+      if (text.includes("g-recaptcha") || text.includes('id="captcha"')) throw new HttpStatusError(res.status, "Google", "CaptchaError");
       results = ff.parseRpcResponse(text);
     } catch (e) {
-      if (isBlock(e)) {
-        blockedUntil = Date.now() + config.googleCooldownMinutes * 60_000;
-        blockReason = (e as Error).name === "CaptchaError" ? "a CAPTCHA" : `HTTP ${(e as { status?: number }).status ?? "block"}`;
-        console.warn(`[google] ${blockReason} — pausing Google requests for ${config.googleCooldownMinutes} min`);
-      }
+      googleGate.onError(e);
       // An empty result set is not an error.
       if ((e as Error).name === "ParseError" && /missing flight data/i.test((e as Error).message)) return [];
       throw e;

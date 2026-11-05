@@ -1,7 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { LegQuery } from "@flightbuzz/core";
 
-process.env.KIWI_TEQUILA_KEY = "test";
 process.env.DB_PATH = ":memory:";
 
 const q: LegQuery = {
@@ -18,24 +17,29 @@ function stubFetch(body: unknown) {
 }
 
 describe("kiwi", () => {
-  it("maps return itineraries into two slices", async () => {
+  it("maps website-API return itineraries, marking self-transfers", async () => {
     const { kiwiProvider } = await import("../src/providers/kiwi.ts");
-    const r = (flyFrom: string, flyTo: string, ld: string, la: string, ud: string, ua: string, ret: 0 | 1) =>
-      ({ flyFrom, flyTo, local_departure: ld, local_arrival: la, utc_departure: ud, utc_arrival: ua, airline: "W6", flight_no: 123, return: ret });
-    const fetchFn = stubFetch({ data: [{
-      id: "abc", price: 99, deep_link: "https://kiwi.com/deep",
-      route: [
-        r("BTS", "AUH", "2026-12-01T10:00:00.000Z", "2026-12-01T18:30:00.000Z", "2026-12-01T09:00:00.000Z", "2026-12-01T14:30:00.000Z", 0),
-        r("DXB", "VIE", "2026-12-08T09:00:00.000Z", "2026-12-08T13:00:00.000Z", "2026-12-08T05:00:00.000Z", "2026-12-08T12:00:00.000Z", 1),
-      ],
-    }] });
-    const fares = await kiwiProvider.search({ ...q, from: ["VIE", "BTS"], to: ["AUH", "DXB"], departTo: "2026-12-03", returnFrom: "2026-12-08", returnTo: "2026-12-10" }, {});
-    const url = new URL(fetchFn.mock.calls[0][0]);
-    expect(url.searchParams.get("date_to")).toBe("03/12/2026");
-    expect(url.searchParams.get("flight_type")).toBe("round");
+    const seg = (from: string, to: string, dep: string, arr: string, carrier: string, recheck = false) => ({
+      layover: recheck ? { duration: 3600, isBaggageRecheck: true } : null,
+      segment: { duration: 7200, code: "123", source: { localTime: dep, station: { code: from } }, destination: { localTime: arr, station: { code: to } }, carrier: { name: carrier, code: carrier } },
+    });
+    const fetchFn = stubFetch({ data: { returnItineraries: { __typename: "Itineraries", itineraries: [{
+      __typename: "ItineraryReturn", id: "ItineraryReturn:abc", price: { amount: "1002" },
+      bookingOptions: { edges: [{ node: { bookingUrl: "/en/booking/?token=x" } }] },
+      outbound: { duration: 90000, sectorSegments: [seg("LPL", "WAW", "2026-12-16T08:20:00", "2026-12-16T11:40:00", "W6"), seg("WAW", "SHJ", "2026-12-16T21:35:00", "2026-12-17T06:30:00", "G9", true)] },
+      inbound: { duration: 80000, sectorSegments: [seg("SHJ", "BGY", "2026-12-31T15:00:00", "2026-12-31T19:00:00", "G9")] },
+    }] } } });
+    const fares = await kiwiProvider.search({ ...q, from: ["LPL"], to: ["SHJ"], departTo: "2026-12-17", returnFrom: "2026-12-31", returnTo: "2027-01-03" }, {});
+    const body = JSON.parse((fetchFn.mock.calls[0] as unknown as [string, { body: string }])[1].body);
+    expect(fetchFn.mock.calls[0][0]).toContain("SearchReturnItinerariesQuery");
+    expect(body.variables.search.itinerary.source.ids).toEqual(["Station:airport:LPL"]);
+    expect(body.variables.search.itinerary.inboundDepartureDate.end).toBe("2027-01-03T23:59:59");
+    expect(fares).toHaveLength(1);
+    expect(fares[0].price).toBe(1002);
     expect(fares[0].slices).toHaveLength(2);
-    expect(fares[0].slices[0]).toMatchObject({ from: "BTS", to: "AUH", departLocal: "2026-12-01T10:00", durationMin: 330 });
-    expect(fares[0].slices[1].from).toBe("DXB");
+    expect(fares[0].slices[0].segments[1].selfTransfer).toBe(true);
+    expect(fares[0].slices[0].durationMin).toBe(1500);
+    expect(fares[0].deepLink).toBe("https://www.kiwi.com/en/booking/?token=x");
   });
 });
 

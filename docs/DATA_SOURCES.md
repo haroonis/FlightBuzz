@@ -11,14 +11,26 @@ FlightBuzz uses **no paid APIs**. Where it has to scrape, it asks slowly enough 
 | Source | How | Cost | In FlightBuzz |
 |---|---|---|---|
 | **Google Flights** | Calls the endpoint the Google Flights page itself uses, with several airports per side. No browser. Only contacts `www.google.com`. `fast-flights-ts` reads the answer. | Free | ✅ `google`, on by default |
-| **Kiwi.com Tequila** | Official API. Free, but keys have only been issued to approved partners since May 2024. | Free (if you have a key) | ✅ `kiwi`, set `KIWI_TEQUILA_KEY` |
-| Kiwi.com website GraphQL | Unofficial (`api.skypicker.com/umbrella/v2/graphql`). Finds Kiwi's self-transfer combinations. | Free | ❌ planned |
+| **Kiwi.com** | The GraphQL API kiwi.com itself uses (`api.skypicker.com/umbrella/v2/graphql`). One request covers several airports per side, a whole date range, and return trips, and includes Kiwi's self-transfer deals on budget airlines. Verified live. | Free | ✅ `kiwi`, on by default |
+| Kiwi.com Tequila | Official API, only for approved partners since May 2024 | — | ❌ not needed |
 | Travelpayouts / Aviasales Data API | Free token. Cached prices users saw in the last 48 h; thin on small airports. | Free | ❌ planned as a pre-filter |
 | Ryanair / Wizz Air | Unofficial cheapest-fare-per-day endpoints | Free | ❌ planned for European legs |
-| **Skyscanner** | Partner API needs a big established business; the site is heavily bot-protected | — | 🔗 "check price" links only |
+| **Skyscanner** | Partner API needs a big established business. The website's search API returned HTTP 403 to us straight away (PerimeterX/HUMAN bot protection). | — | 🔗 "check price" links only |
 | **Kayak** | Affiliate API by approval; aggressive bot blocking | — | 🔗 "check price" links only |
 | SerpApi, SearchApi, Ignav, Duffel | Paid | Paid | ❌ excluded by policy |
 | Amadeus Self-Service | Shut down 17 July 2026 | — | ❌ |
+
+## Kiwi pacing
+
+Kiwi answers a whole leg in one request: every airport on both sides and every date in the range, or a full return search. A typical search therefore needs only a handful of Kiwi requests.
+
+The same polite rules apply as for Google:
+
+- one request at a time, 30–52 s apart (`KIWI_MIN_DELAY_MS`)
+- a 3-hour pause on any sign of blocking
+- at most 200 requests a day
+
+Kiwi prices assume **no checked bags**. Its cheapest deals are often separate tickets on budget airlines, where bags cost extra on every flight.
 
 ## How Google is fetched politely
 

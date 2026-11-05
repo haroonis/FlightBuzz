@@ -108,6 +108,8 @@ export interface Segment {
   carrier: string;
   carrierName?: string;
   flightNo?: string;
+  /** Separate ticket from the previous segment: collect bags and check in again. */
+  selfTransfer?: boolean;
 }
 
 /** A one-directional journey on one ticket (may include connections). */

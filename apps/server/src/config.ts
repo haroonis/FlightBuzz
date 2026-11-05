@@ -23,7 +23,6 @@ export const config = {
   requestBudget: num(env.REQUEST_BUDGET, 600),
   /** How long a fetched answer is reused. Keep below the schedule gap so each run refreshes. */
   cacheTtlMinutes: num(env.CACHE_TTL_MINUTES, 300),
-  kiwiTequilaKey: env.KIWI_TEQUILA_KEY ?? "",
   /**
    * Pause between Google requests (plus up to 75% jitter): 45–80 s, ~60 requests/hour at most.
    * A live test from a cloud server hit HTTP 429 after ~10 requests 10–30 s apart.
@@ -34,6 +33,10 @@ export const config = {
   googleDailyLimit: num(env.GOOGLE_DAILY_LIMIT, 300),
   /** After a block (429 / CAPTCHA), stop asking Google for this long. */
   googleCooldownMinutes: num(env.GOOGLE_COOLDOWN_MINUTES, 180),
+  /** Kiwi answers a whole leg (all airports, all dates) per request, so far fewer requests are needed. */
+  kiwiMinDelayMs: num(env.KIWI_MIN_DELAY_MS, 30000),
+  kiwiDailyLimit: num(env.KIWI_DAILY_LIMIT, 200),
+  kiwiCooldownMinutes: num(env.KIWI_COOLDOWN_MINUTES, 180),
   /** Demo provider generates synthetic fares. On by default only when nothing else is configured. */
   demo: env.DEMO === undefined ? undefined : env.DEMO === "1" || env.DEMO === "true",
   webDist: path.resolve(import.meta.dirname, "../../web/dist"),
