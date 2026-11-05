@@ -27,7 +27,7 @@ To run as one server:
 npm run build && npm start   # serves the web app and API on :8787
 ```
 
-FlightBuzz uses **free sources only**. Google is fetched slowly on purpose: one request at a time, 8–14 s apart, with a 3-hour pause if Google ever pushes back. A big airport-group search therefore takes minutes rather than seconds, which suits the twice-daily refresh. See [docs/DATA_SOURCES.md](docs/DATA_SOURCES.md) for details and [.env.example](.env.example) for settings.
+FlightBuzz uses **free sources only**. Google is fetched slowly on purpose: one request at a time, 45–80 s apart, with a 3-hour pause if Google ever pushes back. A big airport-group search therefore takes minutes rather than seconds, which suits the twice-daily refresh. See [docs/DATA_SOURCES.md](docs/DATA_SOURCES.md) for details and [.env.example](.env.example) for settings.
 
 The only site the server needs to reach is `www.google.com`, plus `api.tequila.kiwi.com` if you have a Kiwi partner key.
 

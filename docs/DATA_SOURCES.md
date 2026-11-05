@@ -22,20 +22,20 @@ FlightBuzz uses **no paid APIs**. Where it has to scrape, it asks slowly enough 
 
 ## How Google is fetched politely
 
-- **One request at a time.** After each request it waits 8–14 s, randomised (`GOOGLE_MIN_DELAY_MS=8000` plus up to 75% jitter). That is at most about 300 requests an hour, similar to one person clicking around steadily.
+- **One request at a time.** After each request it waits 45–80 s, randomised (`GOOGLE_MIN_DELAY_MS=45000` plus up to 75% jitter). That is at most about 60 requests an hour. In a live test from a cloud server, Google returned HTTP 429 after about 10 requests spaced 10–30 s apart, so the old 8–14 s gap was too fast. Home broadband IPs are usually treated more generously than cloud IPs.
 - **No automatic retries.**
 - **Pause on any sign of blocking.** A `429`, `403` or `503`, or a CAPTCHA, stops all Google requests for 3 hours (`GOOGLE_COOLDOWN_MINUTES`). Searches carry on with cached prices, and the app shows the pause.
-- **Daily cap.** At most `GOOGLE_DAILY_LIMIT` requests a day (default 1500).
+- **Daily cap.** At most `GOOGLE_DAILY_LIMIT` requests a day (default 300).
 - **Shared cache.** Answers are reused for 5 hours (`CACHE_TTL_MINUTES`), so overlapping saved searches don't ask twice.
 
 ### What this means for search size
 
-Like the Google Flights page, one request covers **several airports on each side** (up to 7) for **one date**. That makes it about 10–30 s per request:
+Like the Google Flights page, one request covers **several airports on each side** (up to 7) for **one date**. With the pause, that's about 1 minute per request:
 
 | Search | Requests | Time |
 |---|---|---|
-| MAN + LPL + LBA → LHE + MUX + LYP, out 16–17 Dec, back 31 Dec–3 Jan | 2 + 4 = 6 | about 2–3 min |
-| …plus separate tickets via the UAE with 0–2 nights each way | about 20 | about 8–10 min |
+| MAN + LPL + LBA → LHE + MUX + LYP, out 16–17 Dec, back 31 Dec–3 Jan | 2 + 4 = 6 | about 6 min |
+| …plus separate tickets via the UAE with 0–2 nights each way | about 20 | about 20 min |
 
 `REQUEST_BUDGET` (default 600, about 1.5–2 h) caps a single run. Direct legs are fetched first.
 

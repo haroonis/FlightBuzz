@@ -24,11 +24,14 @@ export const config = {
   /** How long a fetched answer is reused. Keep below the schedule gap so each run refreshes. */
   cacheTtlMinutes: num(env.CACHE_TTL_MINUTES, 300),
   kiwiTequilaKey: env.KIWI_TEQUILA_KEY ?? "",
-  /** Pause between Google requests (plus up to 75% jitter). ~8–14 s ≈ 300 requests/hour at most. */
-  googleMinDelayMs: num(env.GOOGLE_MIN_DELAY_MS, 8000),
+  /**
+   * Pause between Google requests (plus up to 75% jitter): 45–80 s, ~60 requests/hour at most.
+   * A live test from a cloud server hit HTTP 429 after ~10 requests 10–30 s apart.
+   */
+  googleMinDelayMs: num(env.GOOGLE_MIN_DELAY_MS, 45000),
   googleConcurrency: num(env.GOOGLE_CONCURRENCY, 1),
   /** Hard cap on Google requests per day. */
-  googleDailyLimit: num(env.GOOGLE_DAILY_LIMIT, 1500),
+  googleDailyLimit: num(env.GOOGLE_DAILY_LIMIT, 300),
   /** After a block (429 / CAPTCHA), stop asking Google for this long. */
   googleCooldownMinutes: num(env.GOOGLE_COOLDOWN_MINUTES, 180),
   /** Demo provider generates synthetic fares. On by default only when nothing else is configured. */
