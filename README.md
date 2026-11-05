@@ -51,6 +51,7 @@ The server only needs to reach `www.google.com` (Google Flights) and `api.skypic
 | `selftransfer` | min minutes between separate tickets (default 180) |
 | `ground` | max ground-transfer hours, `0` to disable (default 5) |
 | `via` | stopover plan, repeatable: `[out.\|back.]PLACES:MIN[-MAX][~PLACES:N…]`. Nights `0` means a self-transfer connection only. |
+| `bags` | checked bags per person to include in prices, 0–2 (default 0) |
 | `adults` `children` `infants` `cabin` `cur` `providers` | as named |
 
 ## Text search
@@ -64,7 +65,7 @@ Keywords:
 
 - **Places and dates:** `A > B`, a date or `DATE..DATE`, `back DATE..DATE`, `back N-M nights`, `oneway`.
 - **Stops and connections:** `stops N`, `direct`, `via [out|back] PLACES N-Mn [then …]`, `layover 24h`, `selftransfer 180m`, `ground 4h`, `noground`.
-- **Passengers, cabin and data:** `adults N`, `children N`, `infants N`, `economy|premium|business|first`, `cur XXX`, `providers a,b`.
+- **Passengers, cabin and data:** `adults N`, `children N`, `infants N`, `bags N`, `economy|premium|business|first`, `cur XXX`, `providers a,b`.
 
 ## How it works
 
@@ -92,7 +93,6 @@ npm run data:airports  # rebuild data/*.json from OurAirports
 ## Roadmap
 
 - Travelpayouts cached-price pre-filter, so only promising dates are searched live
-- Checked-bag prices (Kiwi supports pricing with bags)
 - More free providers: Ryanair / Wizz Air
 - Price alerts (email or push) when a saved search drops below a target
 - Real timezone data for exact elapsed times across time zones

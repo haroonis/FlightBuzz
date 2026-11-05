@@ -143,7 +143,7 @@ export function SearchForm({ spec, onChange, problems, running, progress, onSear
         <span className="muted small">
           {" "}
           · {spec.maxStops === 0 ? "direct" : `≤${spec.maxStops} stops`} · {spec.passengers.adults + spec.passengers.children + spec.passengers.infants} pax ·{" "}
-          {spec.cabin} · {spec.currency}
+          {spec.cabin} · {spec.holdBags ? `${spec.holdBags} checked bag${spec.holdBags > 1 ? "s" : ""} each` : "no checked bags"} · {spec.currency}
         </span>
       </button>
       {showMore && <OptionsPanel spec={spec} onChange={patch} />}

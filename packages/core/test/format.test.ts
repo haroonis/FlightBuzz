@@ -50,3 +50,15 @@ describe("dsl", () => {
     expect(parseDsl("MAN > LHE 2026-12-01 wibble").error).toMatch(/wibble/);
   });
 });
+
+describe("checked bags", () => {
+  it("defaults to none and round-trips through URL and text", () => {
+    expect(pathToSpec("/search/MAN/LHE/2026-12-16/no-return").spec!.holdBags).toBeUndefined();
+    const { spec } = pathToSpec("/search/MAN/LHE/2026-12-16/no-return?bags=1");
+    expect(spec!.holdBags).toBe(1);
+    expect(specToPath(spec!)).toBe("/search/MAN/LHE/2026-12-16/no-return?bags=1");
+    expect(formatDsl(spec!)).toContain("bags 1");
+    expect(parseDsl(formatDsl(spec!)).spec!.holdBags).toBe(1);
+    expect(validateSpec({ ...spec!, holdBags: 3 }).map((p) => p.field)).toContain("holdBags");
+  });
+});

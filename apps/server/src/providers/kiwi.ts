@@ -100,9 +100,9 @@ export function kiwiVariables(q: LegQuery) {
         adults: q.passengers.adults,
         children: q.passengers.children,
         infants: q.passengers.infants,
-        adultsHoldBags: Array(q.passengers.adults).fill(0),
+        adultsHoldBags: Array(q.passengers.adults).fill(q.holdBags ?? 0),
         adultsHandBags: Array(q.passengers.adults).fill(0),
-        childrenHoldBags: Array(q.passengers.children).fill(0),
+        childrenHoldBags: Array(q.passengers.children).fill(q.holdBags ?? 0),
         childrenHandBags: Array(q.passengers.children).fill(0),
       },
       cabinClass: { cabinClass: CABIN[q.cabin], applyMixedClasses: false },
@@ -167,7 +167,7 @@ export function kiwiFares(itineraries: KiwiItinerary[], q: LegQuery): Fare[] {
     fares.push({
       id: `kiwi:${it.id}`,
       provider: "kiwi",
-      price: Number(it.price.amount),
+      price: Math.round(Number(it.price.amount) * 100) / 100,
       currency: q.currency,
       slices: sectors.map(toSlice),
       deepLink: link ? new URL(link, "https://www.kiwi.com").toString() : undefined,
@@ -186,7 +186,7 @@ export const kiwiProvider: FlightProvider = {
     return config.kiwiMinDelayMs;
   },
   configured: () => true,
-  note: "Free, unofficial (Kiwi's website API). Whole airport groups and date ranges in one request, including Kiwi's self-transfer deals.",
+  note: "Free, unofficial (Kiwi's website API). Whole airport groups and date ranges in one request, including Kiwi's self-transfer deals. Prices include the checked bags you choose.",
   unavailable: () => kiwiGate.unavailable(),
   onRequest: () => kiwiGate.onRequest(),
   async search(q: LegQuery, ctx): Promise<Fare[]> {

@@ -30,7 +30,7 @@ The same polite rules apply as for Google:
 - a 3-hour pause on any sign of blocking
 - at most 200 requests a day
 
-Kiwi prices assume **no checked bags**. Its cheapest deals are often separate tickets on budget airlines, where bags cost extra on every flight.
+By default, prices assume **no checked bags**. Set "Checked bags per person" (`bags=1` in the URL) and Kiwi prices include them. In a live test this took the cheapest return from £1,002 to £1,145. Google results are base fares: full-service airlines usually include a bag, budget ones don't.
 
 ## How Google is fetched politely
 

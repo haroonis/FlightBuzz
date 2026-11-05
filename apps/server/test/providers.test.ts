@@ -34,12 +34,22 @@ describe("kiwi", () => {
     expect(fetchFn.mock.calls[0][0]).toContain("SearchReturnItinerariesQuery");
     expect(body.variables.search.itinerary.source.ids).toEqual(["Station:airport:LPL"]);
     expect(body.variables.search.itinerary.inboundDepartureDate.end).toBe("2027-01-03T23:59:59");
+    expect(body.variables.search.passengers.adultsHoldBags).toEqual([0]);
     expect(fares).toHaveLength(1);
     expect(fares[0].price).toBe(1002);
     expect(fares[0].slices).toHaveLength(2);
     expect(fares[0].slices[0].segments[1].selfTransfer).toBe(true);
     expect(fares[0].slices[0].durationMin).toBe(1500);
     expect(fares[0].deepLink).toBe("https://www.kiwi.com/en/booking/?token=x");
+  });
+});
+
+describe("kiwi bags", () => {
+  it("asks Kiwi to price the chosen checked bags", async () => {
+    const { kiwiVariables } = await import("../src/providers/kiwi.ts");
+    const v = kiwiVariables({ ...q, passengers: { adults: 2, children: 1, infants: 0 }, holdBags: 1 });
+    expect(v.search.passengers.adultsHoldBags).toEqual([1, 1]);
+    expect(v.search.passengers.childrenHoldBags).toEqual([1]);
   });
 });
 

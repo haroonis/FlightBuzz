@@ -16,7 +16,7 @@ import type { Cabin, DateRange, Direction, SearchSpec, StopoverStop } from "./ty
  *   via [out|back] PLACES N[-M]n [then PLACES N[-M]n ...]   stopover plan
  *   layover 24h        max connection length; selftransfer 180m
  *   ground 4h | noground
- *   adults N, children N, infants N, economy|premium|business|first
+ *   adults N, children N, infants N, bags N (checked bags per person), economy|premium|business|first
  *   cur GBP            currency; providers google,kiwi
  */
 
@@ -130,6 +130,10 @@ export function parseDsl(text: string): DslResult {
       const n = Number(next());
       if (!Number.isInteger(n)) return fail(`${t} needs a number`);
       spec.passengers[t] = n;
+    } else if (t === "bags") {
+      const n = Number(next());
+      if (!Number.isInteger(n)) return fail("bags needs a number");
+      if (n) spec.holdBags = n;
     } else if ((CABINS as string[]).includes(t)) {
       spec.cabin = t as Cabin;
     } else if (t === "cur" || t === "currency") {
@@ -174,6 +178,7 @@ export function formatDsl(spec: SearchSpec): string {
   if (spec.passengers.adults !== 1) parts.push(`adults ${spec.passengers.adults}`);
   if (spec.passengers.children) parts.push(`children ${spec.passengers.children}`);
   if (spec.passengers.infants) parts.push(`infants ${spec.passengers.infants}`);
+  if (spec.holdBags) parts.push(`bags ${spec.holdBags}`);
   if (spec.cabin !== DEFAULTS.cabin) parts.push(spec.cabin);
   if (spec.currency !== DEFAULTS.currency) parts.push(`cur ${spec.currency}`);
   if (spec.providers.length) parts.push(`providers ${spec.providers.join(",")}`);

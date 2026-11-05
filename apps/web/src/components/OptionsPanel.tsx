@@ -67,6 +67,16 @@ export function OptionsPanel({ spec, onChange }: Props) {
         </label>
 
         <label className="field">
+          <span className="field-label">Checked bags per person</span>
+          <select value={spec.holdBags ?? 0} onChange={(e) => onChange({ holdBags: Number(e.target.value) || undefined })}>
+            <option value={0}>None</option>
+            <option value={1}>1 bag</option>
+            <option value={2}>2 bags</option>
+          </select>
+          <span className="small muted">Included in Kiwi prices. Google shows base fares.</span>
+        </label>
+
+        <label className="field">
           <span className="field-label">Currency</span>
           <select value={spec.currency} onChange={(e) => onChange({ currency: e.target.value })}>
             {[...new Set([spec.currency, ...currencies])].map((c) => (

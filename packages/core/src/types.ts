@@ -49,6 +49,8 @@ export interface SearchSpec {
   return: ReturnSpec;
   passengers: Passengers;
   cabin: Cabin;
+  /** Checked bags per adult/child to include in prices (0 = none, the default). Missing = 0. */
+  holdBags?: number;
   /** Max intermediate airports per direction (connections + stopovers). */
   maxStops: number;
   /** Max hours for a connection that is not a planned stopover night. */
@@ -213,6 +215,8 @@ export interface LegQuery {
   maxStops: number;
   passengers: Passengers;
   cabin: Cabin;
+  /** Checked bags per adult/child (omitted when 0). */
+  holdBags?: number;
   currency: string;
 }
 

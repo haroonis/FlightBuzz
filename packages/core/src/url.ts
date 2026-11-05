@@ -12,7 +12,7 @@ import type { Cabin, DateRange, Direction, SearchSpec, StopoverPlan } from "./ty
  *   return  2027-01-05_2027-01-12 | 7-14-nights | no-return
  * Query (all optional, defaults omitted):
  *   stops, layover (hours), selftransfer (minutes), ground (0|hours), adults,
- *   children, infants, cabin, cur, providers, via (repeatable)
+ *   children, infants, bags (checked bags per person), cabin, cur, providers, via (repeatable)
  *   via = [out.|back.]{places}:{min}[-{max}][~{places}:{min}[-{max}]...]
  */
 
@@ -69,6 +69,7 @@ export function specToPath(spec: SearchSpec): string {
   if (spec.passengers.adults !== 1) add("adults", spec.passengers.adults);
   if (spec.passengers.children) add("children", spec.passengers.children);
   if (spec.passengers.infants) add("infants", spec.passengers.infants);
+  if (spec.holdBags) add("bags", spec.holdBags);
   if (spec.cabin !== DEFAULTS.cabin) add("cabin", spec.cabin);
   if (spec.currency !== DEFAULTS.currency) add("cur", spec.currency);
   if (spec.providers.length) add("providers", spec.providers.join(","));
@@ -123,6 +124,7 @@ export function pathToSpec(input: string): ParseResult {
   spec.passengers.adults = num("adults") ?? 1;
   spec.passengers.children = num("children") ?? 0;
   spec.passengers.infants = num("infants") ?? 0;
+  if (num("bags")) spec.holdBags = num("bags");
   const cabin = params.get("cabin");
   if (cabin) spec.cabin = cabin as Cabin;
   const cur = params.get("cur");
@@ -134,7 +136,7 @@ export function pathToSpec(input: string): ParseResult {
     if (!plan) return { error: `Bad via "${v}"` };
     spec.stopovers.push(plan);
   }
-  for (const k of ["stops", "layover", "selftransfer", "ground", "adults", "children", "infants"]) {
+  for (const k of ["stops", "layover", "selftransfer", "ground", "adults", "children", "infants", "bags"]) {
     if (params.has(k) && !Number.isFinite(Number(params.get(k)))) return { error: `"${k}" must be a number` };
   }
   return { spec };

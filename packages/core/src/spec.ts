@@ -59,6 +59,7 @@ export function validateSpec(spec: SearchSpec, reg: GroupRegistry = defaultRegis
     p.push({ field: "return", message: "Nights range is invalid" });
   }
   if (spec.passengers.adults < 1) p.push({ field: "passengers", message: "At least one adult" });
+  if ((spec.holdBags ?? 0) < 0 || (spec.holdBags ?? 0) > 2) p.push({ field: "holdBags", message: "Checked bags must be 0–2 per person" });
   if (spec.maxStops < 0 || spec.maxStops > 5) p.push({ field: "maxStops", message: "Stops must be 0–5" });
   spec.stopovers.forEach((plan, i) => {
     if (!plan.stops.length) p.push({ field: `stopovers.${i}`, message: "Stopover plan has no stops" });
