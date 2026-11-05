@@ -104,3 +104,27 @@ describe("splitForProvider chunking", () => {
     expect(parts.map((p) => p.from.length)).toEqual([7, 4]);
   });
 });
+
+describe("return tickets", () => {
+  it("splits return queries into date pairs within the nights range", () => {
+    const s = spec({ depart: { from: "2026-12-16", to: "2026-12-17" }, return: { type: "nights", min: 14, max: 15 } });
+    const plan = planSearch(s);
+    const parts = splitForProvider(plan.legs[plan.returnLegKey!], { multiAirport: true, dateRange: false, returnFares: true });
+    expect(parts.map((p) => `${p.departFrom}>${p.returnFrom}`)).toEqual([
+      "2026-12-16>2026-12-30", "2026-12-16>2026-12-31", "2026-12-16>2027-01-01",
+      "2026-12-17>2026-12-31", "2026-12-17>2027-01-01", "2026-12-17>2027-01-02",
+    ]);
+  });
+
+  it("turns open-return fares into trips priced for both ways", () => {
+    const s = spec({ return: { type: "dates", range: { from: "2026-12-31", to: "2027-01-03" } } });
+    const plan = planSearch(s);
+    const f = { ...fare([["MAN", "LHE", "2026-12-01T09:00", "2026-12-02T01:00"]], 700), openReturn: { date: "2027-01-01", from: ["LHE"], to: ["MAN"] } };
+    const late = { ...f, id: "late", openReturn: { date: "2027-01-09", from: ["LHE"], to: ["MAN"] } };
+    const trips = buildTrips(s, plan, { [plan.returnLegKey!]: [f, late] });
+    expect(trips).toHaveLength(1);
+    expect(trips[0].price).toBe(700);
+    expect(trips[0].openReturn?.date).toBe("2027-01-01");
+    expect(trips[0].tags).toContain("return-ticket");
+  });
+});

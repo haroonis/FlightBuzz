@@ -22,7 +22,33 @@ const TAG_LABEL: Record<TripTag, string> = {
   "open-jaw": "Open-jaw",
   "overnight-layover": "Overnight layover",
   "multi-provider": "Mixed providers",
+  "return-ticket": "Return ticket",
 };
+
+/** Return included in a return ticket; the flight itself is picked on Google. */
+function OpenReturnSummary({ trip }: { trip: Trip }) {
+  const r = trip.openReturn!;
+  const link = trip.fares[0]?.deepLink;
+  return (
+    <div className="journey-summary open-return">
+      <div className="js-label">
+        <span className="dir">Return</span>
+        <span className="muted small">{shortDate(`${r.date}T00:00`)}</span>
+      </div>
+      <p className="small muted">
+        {r.from.join("/")} → {r.to.join("/")} · included in this return ticket. Pick the flight on{" "}
+        {link ? (
+          <a href={link} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()}>
+            Google Flights
+          </a>
+        ) : (
+          "Google Flights"
+        )}
+        ; the price shown is the cheapest return for that date.
+      </p>
+    </div>
+  );
+}
 
 function plusDays(from: string, to: string): string {
   const d = daysBetween(datePart(from), datePart(to));
@@ -171,6 +197,7 @@ export function TripCard({ trip, spec }: { trip: Trip; spec: SearchSpec }) {
         <div className="trip-journeys">
           <JourneySummary j={trip.out} label="Outbound" />
           {trip.back && <JourneySummary j={trip.back} label="Return" />}
+          {!trip.back && trip.openReturn && <OpenReturnSummary trip={trip} />}
         </div>
         <div className="trip-price">
           <div className="price">{money(trip.price, trip.currency)}</div>

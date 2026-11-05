@@ -61,3 +61,15 @@ describe("google request", () => {
     expect(segment[6]).toBe("2026-12-01");
   });
 });
+
+describe("google round trip", () => {
+  it("asks for both directions in one request", async () => {
+    const { googleRpcBody } = await import("../src/providers/google.ts");
+    const body = decodeURIComponent(googleRpcBody({ ...q, to: ["LHE", "MUX"], returnFrom: "2027-01-01", returnTo: "2027-01-01" }).slice("f.req=".length));
+    const settings = JSON.parse(JSON.parse(body)[1])[1];
+    expect(settings[2]).toBe(1); // round trip
+    expect(settings[13]).toHaveLength(2);
+    expect(settings[13][1][0]).toEqual([[["LHE", 0], ["MUX", 0]]]);
+    expect(settings[13][1][6]).toBe("2027-01-01");
+  });
+});

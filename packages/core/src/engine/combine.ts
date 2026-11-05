@@ -277,12 +277,16 @@ export function buildTrips(
       });
   const outs = journeys("out");
   const trips = new Map<string, Trip>();
+  const bw = backWindow(spec);
   const add = (t: Omit<Trip, "id" | "score" | "tags">) => {
     const id = tripId(t.fares);
     const prev = trips.get(id);
     if (prev && prev.price <= t.price) return;
-    const js = t.back ? [t.out, t.back] : [t.out];
-    trips.set(id, { ...t, id, score: scoreTrip(t.price, js, spec.currency, voh), tags: tagsFor(t.out, t.back, t.fares) });
+    // An open return is scored as if the way back mirrors the way out.
+    const js = t.back ? [t.out, t.back] : t.openReturn ? [t.out, t.out] : [t.out];
+    const tags = tagsFor(t.out, t.back, t.fares);
+    if (t.fares.some((f) => f.slices.length === 2 || f.openReturn)) tags.push("return-ticket");
+    trips.set(id, { ...t, id, score: scoreTrip(t.price, js, spec.currency, voh), tags });
   };
 
   if (spec.return.type === "oneway") {
@@ -291,14 +295,13 @@ export function buildTrips(
     const backs = journeys("back");
     const topOut = diverse(outs, journeyLimit, spec.currency, voh);
     const topBack = diverse(backs, journeyLimit, spec.currency, voh);
-    const bw = backWindow(spec)!;
     for (const o of topOut) {
       const arr = localMinutes(o.journey.arriveLocal);
       for (const b of topBack) {
         if (localMinutes(b.journey.departLocal) - arr < 6 * 60) continue;
         const backDate = datePart(b.journey.departLocal);
         if (spec.return.type === "dates") {
-          if (backDate < bw.from || backDate > bw.to) continue;
+          if (backDate < bw!.from || backDate > bw!.to) continue;
         } else {
           const nights = daysBetween(datePart(o.journey.arriveLocal), backDate);
           if (nights < spec.return.min || nights > spec.return.max) continue;
@@ -308,12 +311,25 @@ export function buildTrips(
     }
     // Native return tickets.
     for (const f of plan.returnLegKey ? faresByLeg[plan.returnLegKey] ?? [] : []) {
-      if (f.slices.length !== 2 || !f.slices.every((s) => sliceOk(s, spec))) continue;
+      if (!f.slices.every((s) => sliceOk(s, spec))) continue;
       const step = (s: Slice): Step => ({ type: "flight", slice: s, fareId: f.id, provider: f.provider });
-      const out = makeJourney([step(f.slices[0])]);
-      const back = makeJourney([step(f.slices[1])]);
-      if (out.stops > spec.maxStops || back.stops > spec.maxStops) continue;
-      add({ price: round(convert(f.price, f.currency, spec.currency)), currency: spec.currency, out, back, fares: [f] });
+      const price = round(convert(f.price, f.currency, spec.currency));
+      if (f.slices.length === 2) {
+        const out = makeJourney([step(f.slices[0])]);
+        const back = makeJourney([step(f.slices[1])]);
+        if (out.stops > spec.maxStops || back.stops > spec.maxStops) continue;
+        add({ price, currency: spec.currency, out, back, fares: [f] });
+      } else if (f.slices.length === 1 && f.openReturn) {
+        const out = makeJourney([step(f.slices[0])]);
+        if (out.stops > spec.maxStops) continue;
+        const backDate = f.openReturn.date;
+        if (spec.return.type === "dates" && (backDate < bw!.from || backDate > bw!.to)) continue;
+        if (spec.return.type === "nights") {
+          const nights = daysBetween(datePart(out.arriveLocal), backDate);
+          if (nights < spec.return.min || nights > spec.return.max) continue;
+        }
+        add({ price, currency: spec.currency, out, fares: [f], openReturn: f.openReturn });
+      }
     }
   }
   return selectDiverse([...trips.values()], tripLimit);

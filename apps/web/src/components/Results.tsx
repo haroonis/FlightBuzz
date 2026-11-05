@@ -14,7 +14,7 @@ export function bucketOf(t: Trip): StopBucket {
   return s >= 3 ? "3+" : (String(s) as StopBucket);
 }
 
-const travel = (t: Trip) => t.out.travelMin + (t.back?.travelMin ?? 0);
+const travel = (t: Trip) => t.out.travelMin + (t.back?.travelMin ?? (t.openReturn ? t.out.travelMin : 0));
 
 export function Results({ result, title }: { result: SearchResult; title?: string }) {
   const { summary, spec } = result;

@@ -1,4 +1,4 @@
-import { addDays, eachDay } from "../dates.ts";
+import { addDays, daysBetween, eachDay } from "../dates.ts";
 import { GroupRegistry, defaultRegistry, expandPlaces } from "../places.ts";
 import type { DateRange, LegQuery, ProviderCapabilities, SearchSpec, StopoverStop } from "../types.ts";
 
@@ -28,7 +28,8 @@ export interface SearchPlan {
 }
 
 export function legKey(q: LegQuery): string {
-  const ret = q.returnFrom ? `|ret:${q.returnFrom}..${q.returnTo}` : "";
+  const nights = q.nightsMin !== undefined ? `|n${q.nightsMin}-${q.nightsMax}` : "";
+  const ret = q.returnFrom ? `|ret:${q.returnFrom}..${q.returnTo}${nights}` : "";
   const pax = `${q.passengers.adults}.${q.passengers.children}.${q.passengers.infants}`;
   return `${q.from.join(",")}>${q.to.join(",")}|${q.departFrom}..${q.departTo}${ret}|s${q.maxStops}|${q.cabin}|${pax}|${q.currency}`;
 }
@@ -110,6 +111,8 @@ export function planSearch(spec: SearchSpec, reg: GroupRegistry = defaultRegistr
       departTo: spec.depart.to,
       returnFrom: bw.from,
       returnTo: bw.to,
+      // Nights between outbound departure and return dates (+1: arrival can be next day).
+      ...(spec.return.type === "nights" ? { nightsMin: spec.return.min, nightsMax: spec.return.max + 1 } : {}),
       maxStops: spec.maxStops,
       ...base,
     };
@@ -138,7 +141,10 @@ export function splitForProvider(q: LegQuery, caps: ProviderCapabilities): LegQu
         out.push({ ...q, from, to, departFrom: df, departTo: dt });
       } else {
         for (const rd of eachDay(q.returnFrom, q.returnTo!)) {
-          if (rd >= df) out.push({ ...q, from, to, departFrom: df, departTo: dt, returnFrom: rd, returnTo: rd });
+          const n = daysBetween(df, rd);
+          if (n < (q.nightsMin ?? 1) || n > (q.nightsMax ?? Infinity)) continue;
+          const { nightsMin: _a, nightsMax: _b, ...one } = q;
+          out.push({ ...one, from, to, departFrom: df, departTo: dt, returnFrom: rd, returnTo: rd });
         }
       }
     }

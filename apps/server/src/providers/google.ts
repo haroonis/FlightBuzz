@@ -60,23 +60,30 @@ const SEAT = { economy: 1, premium: 2, business: 3, first: 4 } as const;
 /** Google Flights lets you pick up to 7 airports per side. */
 export const GOOGLE_MAX_AIRPORTS = 7;
 
-/** Request body for a one-way search; airports are lists, as Google's own page sends them. */
+/**
+ * Request body; airports are lists, as Google's own page sends them. With
+ * `returnFrom` it is a round trip: Google answers with outbound flights, each
+ * priced as the cheapest return ticket for that return date.
+ */
 export function googleRpcBody(q: LegQuery): string {
   // Stops filter: 0 any, 1 nonstop, 2 up to one stop, 3 up to two stops.
   const stops = q.maxStops >= 3 ? 0 : q.maxStops + 1;
-  const segment = [
-    [q.from.map((a) => [a, 0])],
-    [q.to.map((a) => [a, 0])],
+  const segment = (from: string[], to: string[], date: string) => [
+    [from.map((a) => [a, 0])],
+    [to.map((a) => [a, 0])],
     null,
     stops,
     null,
     null,
-    q.departFrom,
+    date,
     null, null, null, null, null, null, null,
     3,
   ];
+  const segments = [segment(q.from, q.to, q.departFrom)];
+  if (q.returnFrom) segments.push(segment(q.to, q.from, q.returnFrom));
+  const trip = q.returnFrom ? 1 : 2;
   const pax = [q.passengers.adults, q.passengers.children, 0, q.passengers.infants];
-  const settings = [null, null, 2, null, [], SEAT[q.cabin], pax, null, null, null, null, null, null, [segment], null, null, null, 1];
+  const settings = [null, null, trip, null, [], SEAT[q.cabin], pax, null, null, null, null, null, null, segments, null, null, null, 1];
   while (settings.length < 29) settings.push(null);
   const filters = [[], settings, 1, 0, 0, 2];
   return `f.req=${encodeURIComponent(JSON.stringify([null, JSON.stringify(filters)]))}`;
@@ -93,7 +100,7 @@ export const googleProvider: FlightProvider = {
   id: "google",
   name: "Google Flights",
   // Several airports per side, one date per request.
-  capabilities: { multiAirport: true, maxAirportsPerSide: GOOGLE_MAX_AIRPORTS, dateRange: false, returnFares: false },
+  capabilities: { multiAirport: true, maxAirportsPerSide: GOOGLE_MAX_AIRPORTS, dateRange: false, returnFares: true },
   get concurrency() {
     return config.googleConcurrency;
   },
@@ -160,15 +167,29 @@ export const googleProvider: FlightProvider = {
         carrier: r.airlines[i] ?? r.airlines[0] ?? "",
         carrierName: r.airlines[i] ?? r.airlines[0],
       }));
-      const first = segments[0];
-      const last = segments[segments.length - 1];
+      // If Google included the way back, split where the trip reaches the destination.
+      const turn = segments.findIndex((sg) => q.to.includes(sg.to));
+      const outSegs = turn >= 0 ? segments.slice(0, turn + 1) : segments;
+      const backSegs = turn >= 0 ? segments.slice(turn + 1) : [];
+      const slice = (segs: Segment[]) => ({
+        from: segs[0].from,
+        to: segs[segs.length - 1].to,
+        departLocal: segs[0].departLocal,
+        arriveLocal: segs[segs.length - 1].arriveLocal,
+        durationMin: sliceDuration(segs, localMinutes),
+        segments: segs,
+      });
+      const out = slice(outSegs);
+      const isReturn = !!q.returnFrom;
+      const slices = isReturn && backSegs.length ? [out, slice(backSegs)] : [out];
       fares.push({
-        id: `google:${segments.map((s) => `${s.from}${s.to}${s.departLocal}${s.carrier}`).join("|")}`,
+        id: `google:${isReturn ? `rt${q.returnFrom}:` : ""}${segments.map((s) => `${s.from}${s.to}${s.departLocal}${s.carrier}`).join("|")}`,
         provider: "google",
         price: r.price,
         currency: q.currency,
-        slices: [{ from: first.from, to: last.to, departLocal: first.departLocal, arriveLocal: last.arriveLocal, durationMin: sliceDuration(segments, localMinutes), segments }],
-        deepLink: googleFlightsUrl({ from: first.from, to: last.to, date: first.departLocal.slice(0, 10), currency: q.currency }),
+        slices,
+        ...(isReturn && slices.length === 1 ? { openReturn: { date: q.returnFrom!, from: q.to, to: q.from } } : {}),
+        deepLink: googleFlightsUrl({ from: out.from, to: out.to, date: out.departLocal.slice(0, 10), returnDate: q.returnFrom, currency: q.currency }),
         fetchedAt,
       });
     }

@@ -129,6 +129,17 @@ export interface Fare {
   slices: Slice[];
   deepLink?: string;
   fetchedAt: string;
+  /**
+   * Return ticket whose return flight is picked on the provider's site
+   * (Google prices round trips per outbound flight). `price` covers both ways.
+   */
+  openReturn?: OpenReturn;
+}
+
+export interface OpenReturn {
+  date: ISODate;
+  from: string[];
+  to: string[];
 }
 
 export type Step =
@@ -168,6 +179,8 @@ export interface Trip {
   out: Journey;
   back?: Journey;
   fares: Fare[];
+  /** Return included in a return ticket, flight to be picked on the provider's site. */
+  openReturn?: OpenReturn;
   /** Lower is better. Price plus penalties for time and hassle. */
   score: number;
   tags: TripTag[];
@@ -180,7 +193,8 @@ export type TripTag =
   | "airport-change"
   | "open-jaw"
   | "overnight-layover"
-  | "multi-provider";
+  | "multi-provider"
+  | "return-ticket";
 
 /** One request a provider can answer. */
 export interface LegQuery {
@@ -191,6 +205,9 @@ export interface LegQuery {
   /** Present for native return fares only. */
   returnFrom?: ISODate;
   returnTo?: ISODate;
+  /** For return fares: allowed nights between departure and return dates. */
+  nightsMin?: number;
+  nightsMax?: number;
   maxStops: number;
   passengers: Passengers;
   cabin: Cabin;

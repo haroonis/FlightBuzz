@@ -24,7 +24,7 @@ export function stopBucket(t: Trip): StopBucket {
 
 export function summarize(trips: Trip[], currency: string): ResultSummary {
   const min = (xs: Trip[]) => (xs.length ? Math.min(...xs.map((t) => t.price)) : null);
-  const travel = (t: Trip) => t.out.travelMin + (t.back?.travelMin ?? 0);
+  const travel = (t: Trip) => t.out.travelMin + (t.back?.travelMin ?? (t.openReturn ? t.out.travelMin : 0));
   const best = trips.length ? trips.reduce((a, b) => (b.score < a.score ? b : a)) : undefined;
   const fastest = trips.length ? trips.reduce((a, b) => (travel(b) < travel(a) || (travel(b) === travel(a) && b.price < a.price) ? b : a)) : undefined;
   const byStops = { "0": null, "1": null, "2": null, "3+": null } as Record<StopBucket, number | null>;
