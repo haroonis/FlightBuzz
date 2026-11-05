@@ -17,6 +17,12 @@ import { providerInfo } from "./providers/index.ts";
 import { registry } from "./search.ts";
 
 export async function routes(app: FastifyInstance): Promise<void> {
+  // Errors as { error: "message" }.
+  app.setErrorHandler((err: Error & { statusCode?: number }, _req, reply) => {
+    const status = err.statusCode && err.statusCode >= 400 ? err.statusCode : 500;
+    if (status >= 500) app.log.error(err);
+    reply.code(status).send({ error: err.message });
+  });
   const bad = (msg: string) => Object.assign(new Error(msg), { statusCode: 400 });
   const notFound = () => Object.assign(new Error("Not found"), { statusCode: 404 });
   const checkSpec = (spec: SearchSpec | undefined) => {
@@ -100,5 +106,8 @@ export async function routes(app: FastifyInstance): Promise<void> {
     return { jobId: startJob(s.spec, s.id) };
   });
 
-  app.get<{ Params: { id: string } }>("/api/saved/:id/result", async (req) => latestResult(req.params.id) ?? Promise.reject(notFound()));
+  app.get<{ Params: { id: string } }>("/api/saved/:id/result", async (req) => {
+    if (!getSaved(req.params.id)) throw notFound();
+    return latestResult(req.params.id) ?? null;
+  });
 }

@@ -5,9 +5,34 @@ import { sliceDuration, type FlightProvider } from "./types.ts";
 /**
  * Google Flights via the open-source `fast-flights-ts` package, which calls the
  * same internal endpoint the Google Flights page uses (no browser, no key).
- * Unofficial: it can break when Google changes things, and heavy use can be
- * rate-limited, so requests are paced (GOOGLE_MIN_DELAY_MS).
+ * Unofficial: it can break when Google changes things, and heavy use gets
+ * rate-limited. To stay well clear of that:
+ *   - one request at a time, with an 8–14 s pause after each (GOOGLE_MIN_DELAY_MS)
+ *   - no automatic retries
+ *   - on any sign of blocking (429, 403, 503, CAPTCHA) all Google requests stop
+ *     for GOOGLE_COOLDOWN_MINUTES (default 3 h); cached prices are still used
+ *   - at most GOOGLE_DAILY_LIMIT requests per day (default 1500)
  */
+
+let blockedUntil = 0;
+let blockReason = "";
+let day = "";
+let usedToday = 0;
+
+function today(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function isBlock(e: unknown): boolean {
+  const err = e as { name?: string; status?: number; message?: string };
+  if (err?.name === "CaptchaError") return true;
+  if (err?.status && [403, 429, 503].includes(err.status)) return true;
+  return /captcha|unusual traffic|429|too many/i.test(err?.message ?? "");
+}
+
+export function googleStatus() {
+  return { blockedUntil: blockedUntil > Date.now() ? new Date(blockedUntil).toISOString() : null, blockReason, usedToday: day === today() ? usedToday : 0 };
+}
 
 type FF = typeof import("fast-flights-ts");
 let mod: FF | null | undefined;
@@ -40,7 +65,21 @@ export const googleProvider: FlightProvider = {
     return config.googleMinDelayMs;
   },
   configured: async () => !!(await load()),
-  note: "Free, unofficial (fast-flights-ts). One request per airport pair per day; paced to avoid blocks.",
+  note: "Free, unofficial (fast-flights-ts). One request per airport pair per day, sent slowly (~8–14 s apart) with an automatic pause if Google pushes back.",
+  unavailable() {
+    if (Date.now() < blockedUntil) {
+      return `paused until ${new Date(blockedUntil).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })} after ${blockReason}; using cached prices`;
+    }
+    if (day === today() && usedToday >= config.googleDailyLimit) return `daily limit of ${config.googleDailyLimit} requests reached`;
+    return undefined;
+  },
+  onRequest() {
+    if (day !== today()) {
+      day = today();
+      usedToday = 0;
+    }
+    usedToday++;
+  },
   async search(q: LegQuery, ctx): Promise<Fare[]> {
     const ff = await load();
     if (!ff) throw new Error("fast-flights-ts is not installed");
@@ -53,7 +92,17 @@ export const googleProvider: FlightProvider = {
       language: "en-GB",
       max_stops: q.maxStops,
     });
-    const results = await ff.getFlights(query, { timeout: 25_000, maxRetries: 2, retryDelay: 4_000, signal: ctx.signal });
+    let results: Awaited<ReturnType<FF["getFlights"]>>;
+    try {
+      results = await ff.getFlights(query, { timeout: 30_000, maxRetries: 0, signal: ctx.signal });
+    } catch (e) {
+      if (isBlock(e)) {
+        blockedUntil = Date.now() + config.googleCooldownMinutes * 60_000;
+        blockReason = (e as Error).name === "CaptchaError" ? "a CAPTCHA" : `HTTP ${(e as { status?: number }).status ?? "block"}`;
+        console.warn(`[google] ${blockReason} — pausing Google requests for ${config.googleCooldownMinutes} min`);
+      }
+      throw e;
+    }
     const fetchedAt = new Date().toISOString();
     const fares: Fare[] = [];
     for (const r of results) {

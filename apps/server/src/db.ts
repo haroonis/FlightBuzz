@@ -1,8 +1,11 @@
-import { DatabaseSync } from "node:sqlite";
+import { createRequire } from "node:module";
 import { randomUUID } from "node:crypto";
 import type { AirportGroup, Fare, HistoryPoint, ResultSummary, SavedSearch, SearchResult, SearchSpec } from "@flightbuzz/core";
 import { specToPath } from "@flightbuzz/core";
 import { config } from "./config.ts";
+
+// Loaded via require so test bundlers that don't know the newer node:sqlite builtin leave it alone.
+const { DatabaseSync } = createRequire(import.meta.url)("node:sqlite") as typeof import("node:sqlite");
 
 export const db = new DatabaseSync(config.dbPath);
 db.exec(`

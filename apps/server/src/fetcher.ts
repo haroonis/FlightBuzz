@@ -24,16 +24,28 @@ interface Task {
   legKeys: Set<string>;
 }
 
-/** Run tasks with a concurrency cap and a minimum gap between starts. */
-async function pool<T>(items: T[], concurrency: number, minDelayMs: number, fn: (item: T) => Promise<void>, signal?: AbortSignal) {
+/**
+ * Run tasks with a concurrency cap. Each worker rests `minDelayMs` plus up to
+ * 75% random jitter after every request, so requests never come in bursts.
+ * Items for which `skip` returns true are passed over without a request or a pause.
+ */
+async function pool<T>(
+  items: T[],
+  concurrency: number,
+  minDelayMs: number,
+  fn: (item: T) => Promise<void>,
+  skip: (item: T) => boolean,
+  signal?: AbortSignal,
+) {
   let next = 0;
-  let lastStart = 0;
   const worker = async () => {
+    let first = true;
     while (next < items.length && !signal?.aborted) {
       const item = items[next++];
-      const wait = lastStart + minDelayMs + (minDelayMs ? Math.random() * minDelayMs * 0.5 : 0) - Date.now();
-      lastStart = Math.max(Date.now(), lastStart + minDelayMs);
-      if (wait > 0) await new Promise((r) => setTimeout(r, wait));
+      if (skip(item)) continue;
+      if (!first && minDelayMs) await new Promise((r) => setTimeout(r, minDelayMs * (1 + Math.random() * 0.75)));
+      first = false;
+      if (skip(item)) continue; // provider may have paused while we rested
       await fn(item);
     }
   };
@@ -102,6 +114,7 @@ export async function fetchPlan(plan: SearchPlan, providers: FlightProvider[], o
         async (t) => {
           try {
             stats.requests++;
+            provider.onRequest?.();
             const fares = await provider.search(t.query, { signal: opts.signal });
             cachePut(t.cacheKey, fares);
             deliver(t, fares);
@@ -110,6 +123,15 @@ export async function fetchPlan(plan: SearchPlan, providers: FlightProvider[], o
           } finally {
             tick();
           }
+        },
+        () => {
+          const reason = provider.unavailable?.();
+          if (!reason) return false;
+          stats.skippedRequests++;
+          const note = `${provider.name}: ${reason}`;
+          if (!stats.errors.includes(note)) stats.errors.push(note);
+          tick();
+          return true;
         },
         opts.signal,
       ),

@@ -1,7 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { LegQuery } from "@flightbuzz/core";
 
-process.env.SERPAPI_KEY = "test";
 process.env.KIWI_TEQUILA_KEY = "test";
 process.env.DB_PATH = ":memory:";
 
@@ -17,30 +16,6 @@ function stubFetch(body: unknown) {
   vi.stubGlobal("fetch", fn);
   return fn;
 }
-
-describe("serpapi", () => {
-  it("maps Google Flights options to fares", async () => {
-    const { serpApiProvider } = await import("../src/providers/serpapi.ts");
-    const fetchFn = stubFetch({
-      search_metadata: { google_flights_url: "https://www.google.com/travel/flights?x" },
-      best_flights: [{
-        price: 512, total_duration: 690,
-        flights: [
-          { departure_airport: { id: "MAN", name: "Manchester", time: "2026-12-01 08:40" }, arrival_airport: { id: "DXB", name: "Dubai", time: "2026-12-01 19:35" }, duration: 415, airline: "Emirates", flight_number: "EK 18" },
-          { departure_airport: { id: "DXB", name: "Dubai", time: "2026-12-01 22:00" }, arrival_airport: { id: "LHE", name: "Lahore", time: "2026-12-02 02:10" }, duration: 190, airline: "Emirates", flight_number: "EK 624" },
-        ],
-      }],
-    });
-    const fares = await serpApiProvider.search(q, {});
-    const url = new URL(fetchFn.mock.calls[0][0]);
-    expect(url.searchParams.get("departure_id")).toBe("MAN,LPL");
-    expect(url.searchParams.get("stops")).toBe("2");
-    expect(fares).toHaveLength(1);
-    expect(fares[0].price).toBe(512);
-    expect(fares[0].slices[0]).toMatchObject({ from: "MAN", to: "LHE", departLocal: "2026-12-01T08:40", arriveLocal: "2026-12-02T02:10", durationMin: 690 });
-    expect(fares[0].slices[0].segments[1].flightNo).toBe("EK624");
-  });
-});
 
 describe("kiwi", () => {
   it("maps return itineraries into two slices", async () => {

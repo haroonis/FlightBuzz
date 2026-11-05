@@ -23,10 +23,14 @@ export const config = {
   requestBudget: num(env.REQUEST_BUDGET, 600),
   /** How long a fetched answer is reused. Keep below the schedule gap so each run refreshes. */
   cacheTtlMinutes: num(env.CACHE_TTL_MINUTES, 300),
-  serpApiKey: env.SERPAPI_KEY ?? "",
   kiwiTequilaKey: env.KIWI_TEQUILA_KEY ?? "",
-  googleMinDelayMs: num(env.GOOGLE_MIN_DELAY_MS, 1500),
+  /** Pause between Google requests (plus up to 75% jitter). ~8–14 s ≈ 300 requests/hour at most. */
+  googleMinDelayMs: num(env.GOOGLE_MIN_DELAY_MS, 8000),
   googleConcurrency: num(env.GOOGLE_CONCURRENCY, 1),
+  /** Hard cap on Google requests per day. */
+  googleDailyLimit: num(env.GOOGLE_DAILY_LIMIT, 1500),
+  /** After a block (429 / CAPTCHA), stop asking Google for this long. */
+  googleCooldownMinutes: num(env.GOOGLE_COOLDOWN_MINUTES, 180),
   /** Demo provider generates synthetic fares. On by default only when nothing else is configured. */
   demo: env.DEMO === undefined ? undefined : env.DEMO === "1" || env.DEMO === "true",
   webDist: path.resolve(import.meta.dirname, "../../web/dist"),

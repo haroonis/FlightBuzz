@@ -1,13 +1,12 @@
 import type { ProviderInfo } from "@flightbuzz/core";
 import { config } from "../config.ts";
 import { demoProvider } from "./demo.ts";
-import { googleProvider } from "./google.ts";
+import { googleProvider, googleStatus } from "./google.ts";
 import { kiwiProvider } from "./kiwi.ts";
-import { serpApiProvider } from "./serpapi.ts";
 import type { FlightProvider } from "./types.ts";
 
 /** Every provider FlightBuzz knows. Skyscanner and Kayak are deep links only (see docs/DATA_SOURCES.md). */
-export const ALL_PROVIDERS: FlightProvider[] = [googleProvider, serpApiProvider, kiwiProvider, demoProvider];
+export const ALL_PROVIDERS: FlightProvider[] = [googleProvider, kiwiProvider, demoProvider];
 
 async function isEnabled(p: FlightProvider, realConfigured: boolean): Promise<boolean> {
   if (config.providers.length) return config.providers.includes(p.id);
@@ -26,7 +25,7 @@ export async function providerInfo(): Promise<ProviderInfo[]> {
       configured: configured[i],
       enabled: configured[i] && (await isEnabled(p, realConfigured)),
       capabilities: p.capabilities,
-      note: p.note,
+      note: p.id === "google" ? `${p.note} ${googleNote()}`.trim() : p.note,
     })),
   );
 }
@@ -37,4 +36,10 @@ export async function providersFor(requested: string[]): Promise<FlightProvider[
   const pairs = ALL_PROVIDERS.map((p, i) => ({ p, info: info[i] }));
   if (requested.length) return pairs.filter((x) => x.info.configured && requested.includes(x.p.id)).map((x) => x.p);
   return pairs.filter((x) => x.info.enabled).map((x) => x.p);
+}
+
+function googleNote(): string {
+  const st = googleStatus();
+  const used = `${st.usedToday} requests today.`;
+  return st.blockedUntil ? `Paused until ${st.blockedUntil.slice(11, 16)} UTC after ${st.blockReason}. ${used}` : used;
 }

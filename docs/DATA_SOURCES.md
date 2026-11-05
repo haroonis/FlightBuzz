@@ -2,55 +2,48 @@
 
 Status as researched in November 2026. Things marked ⚠ could not be fully confirmed and should be checked before relying on them.
 
+## Policy: free sources only, fetched slowly
+
+FlightBuzz uses **no paid APIs**. Where it has to scrape, it asks slowly enough that it should never hit rate limits.
+
 ## Summary
 
-| Source | How | Cost | Multi-airport per request | Date range per request | In FlightBuzz |
-|---|---|---|---|---|---|
-| **Google Flights** | `fast-flights-ts` (calls Google's internal endpoint, no browser) | Free | No (one pair) | No (one day) | ✅ `google` provider, on by default |
-| Google Flights via **SerpApi** | Paid SERP API | Free 250/mo; $25/1k … $275/30k | Yes (comma list) | No | ✅ `serpapi`, set `SERPAPI_KEY` |
-| **Kiwi.com Tequila** | Official API, partner-only since May 2024 | Free for partners | Yes | Yes, plus native returns | ✅ `kiwi`, set `KIWI_TEQUILA_KEY` |
-| Kiwi.com website GraphQL | Unofficial (`api.skypicker.com/umbrella/v2/graphql`) | Free | Yes | Yes | ❌ not yet. Best-effort candidate for self-transfer fares |
-| **Skyscanner** | Partner API needs an established business with 100k+ monthly visits; site is behind PerimeterX/HUMAN bot protection | — | — | — | 🔗 deep links only |
-| **Kayak** | Affiliate API granted case by case; aggressive bot blocking | — | — | — | 🔗 deep links only |
-| Travelpayouts / Aviasales Data API | Free token, cached prices users saw in the last 48 h | Free (600 req/min) | Yes | Yes | ❌ planned as a cheap pre-filter |
-| Ignav | Paid flight API | 1k free, then $2/1k ⚠ | ⚠ | ⚠ | ❌ candidate paid fallback |
-| SearchApi.io | Paid SERP API (also has a Google Flights calendar engine) | ~$4/1k ⚠ | ⚠ | Calendar engine | ❌ candidate paid fallback |
-| Amadeus Self-Service | Shut down 17 July 2026 | — | — | — | ❌ |
-| Duffel | Bookable fares API, charges for excess searches | ~$0.005/search after 1,500 per booking ⚠ | — | — | ❌ weak low-cost coverage |
-| Ryanair / Wizz Air | Unofficial cheapest-per-day endpoints | Free | — | Yes | ❌ candidates for European positioning legs |
+| Source | How | Cost | In FlightBuzz |
+|---|---|---|---|
+| **Google Flights** | `fast-flights-ts`: calls the endpoint the Google Flights page itself uses. No browser. Only contacts `www.google.com`. | Free | ✅ `google`, on by default |
+| **Kiwi.com Tequila** | Official API. Free, but keys have only been issued to approved partners since May 2024. | Free (if you have a key) | ✅ `kiwi`, set `KIWI_TEQUILA_KEY` |
+| Kiwi.com website GraphQL | Unofficial (`api.skypicker.com/umbrella/v2/graphql`). Finds Kiwi's self-transfer combinations. | Free | ❌ planned |
+| Travelpayouts / Aviasales Data API | Free token. Cached prices users saw in the last 48 h; thin on small airports. | Free | ❌ planned as a pre-filter |
+| Ryanair / Wizz Air | Unofficial cheapest-fare-per-day endpoints | Free | ❌ planned for European legs |
+| **Skyscanner** | Partner API needs a big established business; the site is heavily bot-protected | — | 🔗 "check price" links only |
+| **Kayak** | Affiliate API by approval; aggressive bot blocking | — | 🔗 "check price" links only |
+| SerpApi, SearchApi, Ignav, Duffel | Paid | Paid | ❌ excluded by policy |
+| Amadeus Self-Service | Shut down 17 July 2026 | — | ❌ |
 
-## Recommendation
+## How Google is fetched politely
 
-1. **Google Flights through `fast-flights-ts` as the main source** (free). Each request covers one airport pair on one day, so FlightBuzz paces them (`GOOGLE_MIN_DELAY_MS`, default 1.5 s) and caches answers between saved searches. It is unofficial and against Google's terms. Enforcement against light personal use is rare, but heavy use gets `429` responses or CAPTCHAs. It may also return empty results for small airports, so check SKT, LYP and MUX early.
-2. **A paid fallback when scraping is blocked.** SerpApi is already wired up. Ignav or SearchApi are cheaper per request and easy to add as another provider file.
-3. **Kiwi Tequila if you can get a partner key.** It answers a whole airport group and date range in one request, includes return fares, and finds Kiwi's self-transfer combinations.
-4. **Skyscanner and Kayak as "check this price" links.** Every ticket in the results has links that open the same flight on Google Flights, Kiwi, Skyscanner and Kayak.
+- **One request at a time.** After each request it waits 8–14 s, randomised (`GOOGLE_MIN_DELAY_MS=8000` plus up to 75% jitter). That is at most about 300 requests an hour, similar to one person clicking around steadily.
+- **No automatic retries.**
+- **Pause on any sign of blocking.** A `429`, `403` or `503`, or a CAPTCHA, stops all Google requests for 3 hours (`GOOGLE_COOLDOWN_MINUTES`). Searches carry on with cached prices, and the app shows the pause.
+- **Daily cap.** At most `GOOGLE_DAILY_LIMIT` requests a day (default 1500).
+- **Shared cache.** Answers are reused for 5 hours (`CACHE_TTL_MINUTES`), so overlapping saved searches don't ask twice.
 
-## Request volume
+### What this means for search size
 
-FlightBuzz plans every search as a set of one-way legs: direct, each stopover hub, and the return direction. It then splits each leg to suit each provider:
+Google answers **one airport pair on one day** per request. That makes it about 10 s per request:
 
-- **Google (fast-flights-ts):** airports on side A × airports on side B × days.
-  - MAN, LPL, LBA → LHE, SKT, LYP, MUX over 7 days is 3 × 4 × 7 = 84 requests for the direct outbound leg alone.
-- **SerpApi:** one request per day, so the same leg is 7 requests.
-- **Kiwi:** one request per leg, whatever the date range.
+| Search | Requests | Time |
+|---|---|---|
+| MAN → LHE, 7 days, one-way | 7 | about 1 min |
+| MAN + LPL + LBA → LHE + SKT + LYP + MUX, 7 days, outbound only | 84 | about 15 min |
+| …plus the return direction | ×2 | |
+| …plus each stopover hub | more again | |
 
-Ways to keep the count down:
+`REQUEST_BUDGET` (default 600, about 1.5–2 h) caps a single run. Direct legs are fetched first.
 
-- Answers are cached for `CACHE_TTL_MINUTES` (default 300), so overlapping saved searches share them.
-- `REQUEST_BUDGET` (default 600) caps live requests per run. Direct legs are fetched first, then stopover legs.
-- For Google, smaller airport groups and shorter date windows give the biggest saving.
+Saved searches refresh in the background twice a day, so slow fetching is fine there. For quick interactive searches, keep the groups and date windows tight, or search once and let the twice-daily refresh do the rest.
 
-### Cost at about 5,000 leg requests a day (about 150k a month)
-
-| Source | Monthly cost |
-|---|---|
-| fast-flights-ts | about $0, plus optional residential proxies ⚠ |
-| Ignav | about $300 ⚠ |
-| SearchApi | about $375–500 ⚠ |
-| SerpApi | about $1,100–1,500 ⚠ |
-
-Pre-filtering with cached prices and grouped airports should bring this down to about 500–1,000 live requests a day.
+The library may also return empty results for small airports, so check SKT, LYP and MUX early.
 
 ## Adding a provider
 
@@ -61,12 +54,9 @@ Create `apps/server/src/providers/<name>.ts` that implements `FlightProvider` fr
 
 ## Sources
 
-- SerpApi: https://serpapi.com/google-flights-api, https://serpapi.com/pricing
 - fast-flights-ts: https://github.com/decocms/fast-flights-ts. Python original: https://pypi.org/project/fast-flights/
 - Kiwi partner changes: https://media.kiwi.com/articles-and-interviews/better-for-business-kiwi-com-takes-a-new-approach-to-partnerships/
 - Skyscanner partner requirements: https://skyscannerpartnersupport.zendesk.com/hc/en-us/articles/10881149122717
 - Kayak affiliate API: https://help.affiliates.kayak.com/article/812-do-you-offer-an-api
 - Amadeus shutdown: https://www.phocuswire.com/amadeus-shut-down-self-service-apis-portal-developers
 - Travelpayouts Data API: https://support.travelpayouts.com/hc/en-us/articles/4402565416594
-- Duffel excess search: https://help.duffel.com/hc/en-gb/articles/4412912264466-What-is-Excess-Search
-- Ignav pricing: https://ignav.com/pricing

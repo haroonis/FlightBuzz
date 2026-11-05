@@ -10,11 +10,15 @@ export interface FlightProvider {
   capabilities: ProviderCapabilities;
   /** Concurrent requests allowed. */
   concurrency: number;
-  /** Minimum gap between request starts, in ms. */
+  /** Pause after each request, in ms (plus random jitter). */
   minDelayMs: number;
   /** Has what it needs to run (keys, optional packages). */
   configured(): Promise<boolean> | boolean;
   note: string;
+  /** If set and returns a reason, remaining requests are skipped (e.g. cooling down after a block). */
+  unavailable?(): string | undefined;
+  /** Called just before each live request (for daily counters). */
+  onRequest?(): void;
   /** Answer one query already split to this provider's capabilities. */
   search(q: LegQuery, ctx: ProviderContext): Promise<Fare[]>;
 }
