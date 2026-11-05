@@ -76,7 +76,7 @@ apps/web        React app: Kiwi-style search form, results, saved-search dashboa
 ```
 
 1. **Plan.** The search becomes one-way legs: origins → destinations, origins → each stopover hub → destinations (with date windows shifted by the nights allowed), and the same for the return.
-2. **Fetch.** Each leg is split to fit each provider (per day, per airport pair or not), deduplicated, cached, paced and capped by a request budget.
+2. **Fetch.** Each leg is split to fit each provider (per day and/or per batch of airports), deduplicated, cached, paced and capped by a request budget.
 3. **Stitch.** Legs are joined into journeys that respect minimum self-transfer time, maximum layover, nights per stopover and maximum ground-transfer time. Outbound and return journeys are then paired within the nights or return window, and native return fares are added where a provider has them.
 4. **Rank.** Each trip gets a price and a "best" score: price plus £8 per travel hour, with penalties for stops, self-transfers, airport changes and overnight layovers. The kept results stay varied, with the cheapest and best in every stop/stopover bucket.
 5. **Track.** Saved searches are re-run at `SCHEDULE` times (default 07:00 and 19:00), and each run's summary is stored for the price-history charts. `npm run refresh -w @flightbuzz/server` does the same from system cron.

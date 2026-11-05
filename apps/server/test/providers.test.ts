@@ -48,3 +48,16 @@ describe("demo", () => {
     expect(a.every((f) => f.slices[0].segments.length === 1)).toBe(true);
   });
 });
+
+describe("google request", () => {
+  it("sends every airport on each side in one request", async () => {
+    const { googleRpcBody } = await import("../src/providers/google.ts");
+    const body = decodeURIComponent(googleRpcBody({ ...q, from: ["MAN", "LPL", "LBA"], to: ["LHE", "MUX", "LYP"], maxStops: 2 }).slice("f.req=".length));
+    const filters = JSON.parse(JSON.parse(body)[1]);
+    const segment = filters[1][13][0];
+    expect(segment[0]).toEqual([[["MAN", 0], ["LPL", 0], ["LBA", 0]]]);
+    expect(segment[1]).toEqual([[["LHE", 0], ["MUX", 0], ["LYP", 0]]]);
+    expect(segment[3]).toBe(3); // up to two stops
+    expect(segment[6]).toBe("2026-12-01");
+  });
+});

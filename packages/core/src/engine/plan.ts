@@ -126,7 +126,9 @@ export function planSearch(spec: SearchSpec, reg: GroupRegistry = defaultRegistr
 export function splitForProvider(q: LegQuery, caps: ProviderCapabilities): LegQuery[] {
   if (q.returnFrom && !caps.returnFares) return [];
   const days = caps.dateRange ? [[q.departFrom, q.departTo]] : eachDay(q.departFrom, q.departTo).map((d) => [d, d]);
-  const pairs = caps.multiAirport ? [[q.from, q.to]] : q.from.flatMap((f) => q.to.map((t) => [[f], [t]]));
+  const chunk = (xs: string[], n: number) => !Number.isFinite(n) ? [xs] : Array.from({ length: Math.ceil(xs.length / n) }, (_, i) => xs.slice(i * n, i * n + n));
+  const size = caps.multiAirport ? (caps.maxAirportsPerSide ?? Infinity) : 1;
+  const pairs = chunk(q.from, size).flatMap((f) => chunk(q.to, size).map((t) => [f, t]));
   const out: LegQuery[] = [];
   for (const [df, dt] of days) {
     for (const [from, to] of pairs) {

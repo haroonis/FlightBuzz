@@ -200,6 +200,8 @@ export interface LegQuery {
 export interface ProviderCapabilities {
   /** Accepts several airports per side in one request. */
   multiAirport: boolean;
+  /** Most airports per side in one request (when multiAirport). */
+  maxAirportsPerSide?: number;
   /** Accepts a departure date range in one request. */
   dateRange: boolean;
   /** Can price native return tickets. */

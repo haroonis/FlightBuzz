@@ -10,7 +10,7 @@ FlightBuzz uses **no paid APIs**. Where it has to scrape, it asks slowly enough 
 
 | Source | How | Cost | In FlightBuzz |
 |---|---|---|---|
-| **Google Flights** | `fast-flights-ts`: calls the endpoint the Google Flights page itself uses. No browser. Only contacts `www.google.com`. | Free | ✅ `google`, on by default |
+| **Google Flights** | Calls the endpoint the Google Flights page itself uses, with several airports per side. No browser. Only contacts `www.google.com`. `fast-flights-ts` reads the answer. | Free | ✅ `google`, on by default |
 | **Kiwi.com Tequila** | Official API. Free, but keys have only been issued to approved partners since May 2024. | Free (if you have a key) | ✅ `kiwi`, set `KIWI_TEQUILA_KEY` |
 | Kiwi.com website GraphQL | Unofficial (`api.skypicker.com/umbrella/v2/graphql`). Finds Kiwi's self-transfer combinations. | Free | ❌ planned |
 | Travelpayouts / Aviasales Data API | Free token. Cached prices users saw in the last 48 h; thin on small airports. | Free | ❌ planned as a pre-filter |
@@ -30,14 +30,12 @@ FlightBuzz uses **no paid APIs**. Where it has to scrape, it asks slowly enough 
 
 ### What this means for search size
 
-Google answers **one airport pair on one day** per request. That makes it about 10 s per request:
+Like the Google Flights page, one request covers **several airports on each side** (up to 7) for **one date**. That makes it about 10–30 s per request:
 
 | Search | Requests | Time |
 |---|---|---|
-| MAN → LHE, 7 days, one-way | 7 | about 1 min |
-| MAN + LPL + LBA → LHE + SKT + LYP + MUX, 7 days, outbound only | 84 | about 15 min |
-| …plus the return direction | ×2 | |
-| …plus each stopover hub | more again | |
+| MAN + LPL + LBA → LHE + MUX + LYP, out 16–17 Dec, back 31 Dec–3 Jan | 2 + 4 = 6 | about 2–3 min |
+| …plus separate tickets via the UAE with 0–2 nights each way | about 20 | about 8–10 min |
 
 `REQUEST_BUDGET` (default 600, about 1.5–2 h) caps a single run. Direct legs are fetched first.
 

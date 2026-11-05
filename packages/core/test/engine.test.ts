@@ -96,3 +96,11 @@ describe("engine", () => {
     expect(splitForProvider(direct, { multiAirport: true, dateRange: true, returnFares: true })).toHaveLength(1);
   });
 });
+
+describe("splitForProvider chunking", () => {
+  it("limits airports per side", () => {
+    const q = planSearch(spec({ origins: ["@london", "@north-midlands"], destinations: ["LHE"] })).legs;
+    const parts = splitForProvider(Object.values(q)[0], { multiAirport: true, maxAirportsPerSide: 7, dateRange: false, returnFares: false });
+    expect(parts.map((p) => p.from.length)).toEqual([7, 4]);
+  });
+});
