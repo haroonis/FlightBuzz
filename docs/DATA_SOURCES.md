@@ -36,7 +36,7 @@ Kiwi answers a whole leg in one request: every airport on both sides and every d
 
 The same polite rules apply as for Google:
 
-- one request at a time, 30–52 s apart (`KIWI_MIN_DELAY_MS`)
+- one request at a time, 24–42 s apart (`KIWI_MIN_DELAY_MS`)
 - a 3-hour pause on any sign of blocking
 - at most 200 requests a day
 
@@ -44,7 +44,7 @@ By default, prices assume **no checked bags**. Set "Checked bags per person" (`b
 
 ## How Google is fetched politely
 
-- **One request at a time.** After each request it waits 45–80 s, randomised (`GOOGLE_MIN_DELAY_MS=45000` plus up to 75% jitter). That is at most about 60 requests an hour. In a live test from a cloud server, Google returned HTTP 429 after about 10 requests spaced 10–30 s apart, so the old 8–14 s gap was too fast. Home broadband IPs are usually treated more generously than cloud IPs.
+- **One request at a time.** After each request it waits 36–63 s, randomised (`GOOGLE_MIN_DELAY_MS=36000` plus up to 75% jitter). That is at most about 75 requests an hour. Through the browser window, about 60 pages in a row at a 45–80 s pace loaded with no blocks, so the pause was then cut by 20%. In a live test from a cloud server, Google returned HTTP 429 after about 10 requests spaced 10–30 s apart, so the old 8–14 s gap was too fast. Home broadband IPs are usually treated more generously than cloud IPs.
 - **No automatic retries.**
 - **Pause on any sign of blocking.** A `429`, `403` or `503`, or a CAPTCHA, stops all Google requests for 3 hours (`GOOGLE_COOLDOWN_MINUTES`). Searches carry on with cached prices, and the app shows the pause.
 - **Daily cap.** At most `GOOGLE_DAILY_LIMIT` requests a day (default 300).
