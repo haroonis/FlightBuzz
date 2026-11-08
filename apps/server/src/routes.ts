@@ -13,6 +13,7 @@ import {
 import { config } from "./config.ts";
 import { createSaved, deleteGroup, deleteSaved, getSaved, latestResult, listGroups, listSaved, putGroup, updateSaved } from "./db.ts";
 import { getJob, startJob } from "./jobs.ts";
+import { browserAvailable, browserStatus, tab } from "./browser/session.ts";
 import { providerInfo } from "./providers/index.ts";
 import { registry } from "./search.ts";
 
@@ -40,7 +41,25 @@ export async function routes(app: FastifyInstance): Promise<void> {
       schedule: config.schedule,
       timezone: config.timezone,
       currencies: knownCurrencies(),
+      browser: { mode: (await browserAvailable()) ? browserStatus.mode : "off", waitingForHuman: browserStatus.waitingForHuman },
     };
+  });
+
+  // Open a site in the FlightBuzz browser window, e.g. to accept its cookies or
+  // do its robot check once. The saved profile keeps the result.
+  const SITES: Record<string, string> = {
+    google: "https://www.google.com/travel/flights?hl=en-GB&gl=uk",
+    skyscanner: "https://www.skyscanner.net/",
+    kiwi: "https://www.kiwi.com/en/",
+  };
+  app.post<{ Body: { site?: string } }>("/api/browser/open", async (req) => {
+    const site = req.body?.site ?? "google";
+    if (!SITES[site]) throw bad(`Unknown site "${site}"`);
+    if (!(await browserAvailable())) throw bad("The browser is off (BROWSER=off) or Playwright is not installed");
+    const page = await tab(site);
+    await page.goto(SITES[site], { waitUntil: "domcontentloaded", timeout: 60_000 });
+    await page.bringToFront();
+    return { ok: true, mode: browserStatus.mode };
   });
 
   app.get<{ Querystring: { q?: string } }>("/api/places", async (req) => searchPlaces(req.query.q ?? "", registry()));

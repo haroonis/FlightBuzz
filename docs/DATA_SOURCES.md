@@ -10,15 +10,25 @@ FlightBuzz uses **no paid APIs**. Where it has to scrape, it asks slowly enough 
 
 | Source | How | Cost | In FlightBuzz |
 |---|---|---|---|
-| **Google Flights** | Calls the endpoint the Google Flights page itself uses, with several airports per side. No browser. Only contacts `www.google.com`. `fast-flights-ts` reads the answer. | Free | ✅ `google`, on by default |
+| **Google Flights** | Opens the Google Flights results page in the FlightBuzz browser window (a real, kept-open window with a saved profile) and reads the flights from it, with up to 7 airports per side. With `BROWSER=off` it calls the page's own endpoint directly instead. `fast-flights-ts` reads Google's data. Verified live. | Free | ✅ `google`, on by default |
 | **Kiwi.com** | The GraphQL API kiwi.com itself uses (`api.skypicker.com/umbrella/v2/graphql`). One request covers several airports per side, a whole date range, and return trips, and includes Kiwi's self-transfer deals on budget airlines. Verified live. | Free | ✅ `kiwi`, on by default |
 | Kiwi.com Tequila | Official API, only for approved partners since May 2024 | — | ❌ not needed |
 | Travelpayouts / Aviasales Data API | Free token. Cached prices users saw in the last 48 h; thin on small airports. | Free | ❌ planned as a pre-filter |
 | Ryanair / Wizz Air | Unofficial cheapest-fare-per-day endpoints | Free | ❌ planned for European legs |
-| **Skyscanner** | Partner API needs a big established business. The website's search API returned HTTP 403 to us straight away (PerimeterX/HUMAN bot protection). | — | 🔗 "check price" links only |
+| **Skyscanner** | Partner API needs a big established business, and direct requests get HTTP 403. FlightBuzz instead opens Skyscanner's results page in the browser window and reads the search data the page loads. Skyscanner shows a "Press & Hold" robot check, which you do once in the window. The page's data format is not verified yet: run with `SKYSCANNER_DEBUG=1` the first time. | Free | ✅ `skyscanner`, opt-in |
 | **Kayak** | Affiliate API by approval; aggressive bot blocking | — | 🔗 "check price" links only |
 | SerpApi, SearchApi, Ignav, Duffel | Paid | Paid | ❌ excluded by policy |
 | Amadeus Self-Service | Shut down 17 July 2026 | — | ❌ |
+
+## The browser window
+
+Google Flights and Skyscanner are read the way a person would read them: in a real Chrome window (Playwright) that stays open and is reused. Its saved profile in `.browser-profile/` keeps cookies and consent choices.
+
+- **Cookie screens** are accepted automatically.
+- **Robot checks** (Google "unusual traffic", Skyscanner "Press & Hold") are never automated. FlightBuzz brings the window to the front and shows a banner. You do the check, and the search carries on. If nobody does it within `HUMAN_WAIT_MINUTES` (default 10), that site is paused for 3 hours.
+- **Human-like pacing on each page:** a few seconds of waiting, a scroll, and clicking "View more flights".
+
+A real browser doesn't fix a flagged internet address. From this project's cloud test server, Google blocked direct requests after a handful of tries. From the same server, the browser window loaded Google Flights results normally. Skyscanner showed its robot check straight away. A home connection is the best place to run FlightBuzz.
 
 ## Kiwi pacing
 

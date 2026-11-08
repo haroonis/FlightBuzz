@@ -39,5 +39,20 @@ export const config = {
   kiwiCooldownMinutes: num(env.KIWI_COOLDOWN_MINUTES, 180),
   /** Demo provider generates synthetic fares. On by default only when nothing else is configured. */
   demo: env.DEMO === undefined ? undefined : env.DEMO === "1" || env.DEMO === "true",
+  /**
+   * How to reach Google Flights and Skyscanner: "headed" (a real, visible browser
+   * window that is kept open and reused; the default), "headless" (hidden
+   * browser) or "off" (Google via direct requests; Skyscanner disabled).
+   */
+  browser: (env.BROWSER ?? "headed") as "headed" | "headless" | "off",
+  /** Saved browser profile: cookies and consent choices live here. */
+  browserProfileDir: env.BROWSER_PROFILE_DIR ?? path.resolve(import.meta.dirname, "../../../.browser-profile"),
+  /** Use a specific Chrome/Chromium instead of Playwright's. */
+  browserExecutable: env.BROWSER_EXECUTABLE ?? "",
+  /** How long to wait for you to complete a human check in the window. */
+  humanWaitMinutes: num(env.HUMAN_WAIT_MINUTES, 10),
+  skyscannerMinDelayMs: num(env.SKYSCANNER_MIN_DELAY_MS, 45000),
+  skyscannerDailyLimit: num(env.SKYSCANNER_DAILY_LIMIT, 150),
+  skyscannerCooldownMinutes: num(env.SKYSCANNER_COOLDOWN_MINUTES, 180),
   webDist: path.resolve(import.meta.dirname, "../../web/dist"),
 };

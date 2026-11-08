@@ -16,20 +16,31 @@ Find the cheapest and most convenient ways to fly between **groups of airports**
 
 ```bash
 npm install
-npm run dev          # API on :8787, web app on http://localhost:5173
+npx playwright install chromium   # the browser FlightBuzz drives
+npm run build && npm start        # web app + API on http://localhost:8787
 ```
 
-With no API keys, FlightBuzz uses **Google Flights through `fast-flights-ts`**, which is free and unofficial. To try the app without touching any real site, run `PROVIDERS=demo npm run dev`, which uses clearly-labelled synthetic prices.
+For development, `npm run dev` serves the web app on :5173 with live reload.
 
-To run as one server:
+### The FlightBuzz browser window
 
-```bash
-npm run build && npm start   # serves the web app and API on :8787
-```
+Google Flights and Skyscanner are read through **a real, visible browser window**. FlightBuzz opens it on the first search and keeps it open, reusing it for every search, just like a person browsing. The window has its own saved profile (`.browser-profile/`), so cookie choices and robot-check passes survive restarts.
 
-FlightBuzz uses **free sources only**: Google Flights and Kiwi.com, through the same APIs their own websites use. Skyscanner and Kayak block automated access, so they appear as "check this price" links. Google is fetched slowly on purpose: one request at a time, 45–80 s apart, with a 3-hour pause if Google ever pushes back. A big airport-group search therefore takes minutes rather than seconds, which suits the twice-daily refresh. See [docs/DATA_SOURCES.md](docs/DATA_SOURCES.md) for details and [.env.example](.env.example) for settings.
+- **First run:** FlightBuzz accepts Google's cookie screen itself. If Skyscanner shows its "Press & Hold" robot check, the app shows a banner. Do the check in the window and the search carries on. FlightBuzz never tries to solve robot checks itself.
+- **One-time setup in advance:** under More options → Providers, click *Google Flights*, *Skyscanner* or *Kiwi* to open that site in the window.
+- **Leave the window open.** If you close it, it reopens on the next search.
+- **On a server with no screen:** set `BROWSER=headless` (hidden window; robot checks can't be done there) or `BROWSER=off` (Google through direct requests; no Skyscanner).
 
-The server only needs to reach `www.google.com` (Google Flights) and `api.skypicker.com` (Kiwi).
+### Sources
+
+FlightBuzz uses **free sources only**:
+
+- **Google Flights**, through its results page in the browser window, with all airports on each side in one page.
+- **Kiwi.com**, through the API kiwi.com itself uses: one request per leg covering all airports and dates, including Kiwi's separate-ticket deals.
+- **Skyscanner** (opt-in), through its results page in the browser window. It covers one airport pair per page, so tick it for a search or add it to `PROVIDERS`.
+- **Kayak:** "check this price" links only.
+
+Everything is fetched slowly on purpose: one request at a time, 30–80 s apart, with a 3-hour pause if a site pushes back. A big search therefore takes minutes rather than seconds, which suits the twice-daily refresh. See [docs/DATA_SOURCES.md](docs/DATA_SOURCES.md) for details and [.env.example](.env.example) for settings. To try the app without touching any real site, run `PROVIDERS=demo npm start`.
 
 ## Search URLs
 

@@ -57,6 +57,7 @@ export const api = {
   updateSaved: (id: string, patch: Partial<SavedSearchInput>) =>
     request<SavedSearch>("PUT", `/api/saved/${encodeURIComponent(id)}`, patch),
   deleteSaved: (id: string) => request<void>("DELETE", `/api/saved/${encodeURIComponent(id)}`),
+  openBrowser: (site: "google" | "skyscanner" | "kiwi") => request<{ ok: boolean; mode: string }>("POST", "/api/browser/open", { site }),
   runSaved: (id: string) => request<{ jobId: string }>("POST", `/api/saved/${encodeURIComponent(id)}/run`),
   savedResult: (id: string) => request<SearchResult | null>("GET", `/api/saved/${encodeURIComponent(id)}/result`),
   groups: () => request<AirportGroup[]>("GET", "/api/groups"),

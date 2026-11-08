@@ -1411,3 +1411,6 @@ main {
 
 .journey-summary.open-return p { margin: 4px 0 0; line-height: 1.4; }
 .pill.tag-return-ticket { background: color-mix(in srgb, var(--accent, #00a991) 14%, transparent); color: var(--accent, #00a991); }
+
+.banner.warn { background: #fff4d6; color: #6b4e00; border-bottom: 1px solid #f0d58a; padding: 10px 16px; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .banner.warn { background: #3a2f10; color: #f3d98b; border-color: #5a4a1a; } }

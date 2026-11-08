@@ -1,4 +1,5 @@
 import { NavLink, Route, Routes, useLocation } from "react-router-dom";
+import { BrowserBanner } from "./components/BrowserBanner.tsx";
 import { useApp } from "./context.tsx";
 import { GroupsPage } from "./pages/GroupsPage.tsx";
 import { SavedPage } from "./pages/SavedPage.tsx";
@@ -33,6 +34,7 @@ export function App() {
           </button>
         </div>
       )}
+      <BrowserBanner />
       <main>
         <Routes>
           <Route path="/saved" element={<SavedPage />} />

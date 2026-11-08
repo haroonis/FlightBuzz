@@ -1,4 +1,5 @@
 import type { Cabin, SearchSpec } from "@flightbuzz/core";
+import { api } from "../api.ts";
 import { useApp } from "../context.tsx";
 import { Segmented } from "./Segmented.tsx";
 
@@ -155,6 +156,16 @@ export function OptionsPanel({ spec, onChange }: Props) {
             );
           })}
         </div>
+        {meta?.browser && meta.browser.mode !== "off" && (
+          <p className="small muted">
+            Browser window ({meta.browser.mode}). Open a site to accept its cookies or do its robot check once:{" "}
+            {(["google", "skyscanner", "kiwi"] as const).map((site) => (
+              <button key={site} type="button" className="link-btn small" onClick={() => void api.openBrowser(site).catch(() => undefined)}>
+                {site === "google" ? "Google Flights" : site === "skyscanner" ? "Skyscanner" : "Kiwi"}
+              </button>
+            ))}
+          </p>
+        )}
         {spec.providers.length > 0 && (
           <button type="button" className="link-btn small" onClick={() => onChange({ providers: [] })}>
             Use all enabled providers

@@ -87,3 +87,34 @@ describe("google round trip", () => {
     expect(settings[13][1][6]).toBe("2027-01-01");
   });
 });
+
+describe("google page url", () => {
+  it("matches fast-flights-ts for one airport and lists every airport otherwise", async () => {
+    const { googleTfs } = await import("../src/providers/google.ts");
+    const ff = await import("fast-flights-ts");
+    const one = { ...q, from: ["MAN"], to: ["LHE"], maxStops: 2 };
+    const ref = ff.createQuery({ flights: [{ date: "2026-12-01", from_airport: "MAN", to_airport: "LHE", max_stops: 2 }], trip: "one-way", seat: "economy", passengers: new ff.Passengers({ adults: 1 }) });
+    expect(googleTfs(one)).toBe(ref.toStr());
+    const multi = Buffer.from(googleTfs({ ...q, from: ["MAN", "LPL", "LBA"], to: ["LHE", "MUX"], returnFrom: "2027-01-01", returnTo: "2027-01-01" }), "base64").toString("latin1");
+    for (const code of ["MAN", "LPL", "LBA", "LHE", "MUX", "2027-01-01"]) expect(multi).toContain(code);
+  });
+});
+
+describe("skyscanner", () => {
+  it("reads itineraries from the search JSON", async () => {
+    const { skyscannerFares, skyscannerItineraries } = await import("../src/providers/skyscanner.ts");
+    const body = { context: { status: "complete" }, itineraries: { results: [{
+      id: "x", price: { raw: 1222.4, formatted: "£1,222" },
+      legs: [{
+        origin: { displayCode: "MAN" }, destination: { displayCode: "LHE" }, departure: "2026-12-16T19:00:00", arrival: "2026-12-17T08:15:00", durationInMinutes: 495,
+        segments: [{ origin: { displayCode: "MAN" }, destination: { displayCode: "LHE" }, departure: "2026-12-16T19:00:00", arrival: "2026-12-17T08:15:00", durationInMinutes: 495, flightNumber: "702", marketingCarrier: { name: "PIA", alternateId: "PK" } }],
+      }],
+    }] } };
+    const fares = skyscannerFares(skyscannerItineraries(body), q, "https://www.skyscanner.net/x");
+    expect(fares).toHaveLength(1);
+    expect(fares[0]).toMatchObject({ provider: "skyscanner", price: 1222.4 });
+    expect(fares[0].slices[0]).toMatchObject({ from: "MAN", to: "LHE", departLocal: "2026-12-16T19:00", durationMin: 495 });
+    expect(fares[0].slices[0].segments[0].flightNo).toBe("PK702");
+    expect(skyscannerItineraries({ nothing: true })).toEqual([]);
+  });
+});

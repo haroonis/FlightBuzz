@@ -18,6 +18,14 @@ export interface MetaResponse {
   schedule: string[];
   timezone: string;
   currencies: string[];
+  browser: BrowserInfo;
+}
+
+export interface BrowserInfo {
+  /** "headed", "headless", "headless (no screen)" or "off". */
+  mode: string;
+  /** Set while a site's human check is waiting for you in the browser window. */
+  waitingForHuman: string | null;
 }
 
 export type StopBucket = "0" | "1" | "2" | "3+";

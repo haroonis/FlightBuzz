@@ -9,11 +9,12 @@
     "refresh": "NODE_OPTIONS=--disable-warning=ExperimentalWarning tsx src/cli.ts refresh"
   },
   "dependencies": {
-    "@flightbuzz/core": "*",
     "@fastify/static": "^8.0.3",
+    "@flightbuzz/core": "*",
     "fastify": "^5.2.0"
   },
   "optionalDependencies": {
-    "fast-flights-ts": "^4.1.0"
+    "fast-flights-ts": "^4.1.0",
+    "playwright": "^1.63.0"
   }
 }

@@ -1,13 +1,16 @@
-import { googleFlightsUrl, localMinutes, type Fare, type LegQuery, type Segment } from "@flightbuzz/core";
+import { localMinutes, type Fare, type LegQuery, type Segment } from "@flightbuzz/core";
 import { config } from "../config.ts";
+import { browserAvailable, clickIfPresent, settle, waitForHuman, withTab } from "../browser/session.ts";
 import { HttpStatusError, PoliteGate } from "./polite.ts";
 import { sliceDuration, type FlightProvider } from "./types.ts";
 
 /**
- * Google Flights through the same internal endpoint the Google Flights page
- * uses (no browser, no key). We build the request ourselves so that each side
- * can list several airports, exactly like typing several airports into Google
- * Flights, and use the open-source `fast-flights-ts` package to read the answer.
+ * Google Flights. Two ways in, both free and with several airports per side:
+ *   - browser (default): opens the Google Flights results page in the FlightBuzz
+ *     browser window (a real, kept-open window with a saved profile) and reads
+ *     the results from the page, like a person browsing
+ *   - direct (BROWSER=off): calls the endpoint the Google Flights page uses
+ * The open-source `fast-flights-ts` package reads Google's answer.
  * Unofficial: it can break when Google changes things, and heavy use gets
  * rate-limited. To stay well clear of that:
  *   - one request at a time, with a 45–80 s pause after each (GOOGLE_MIN_DELAY_MS)
@@ -75,6 +78,127 @@ export function googleRpcBody(q: LegQuery): string {
   return `f.req=${encodeURIComponent(JSON.stringify([null, JSON.stringify(filters)]))}`;
 }
 
+// ---- Google Flights page URL (the "tfs" parameter is a small protobuf) ----
+
+function varint(n: number): number[] {
+  const out: number[] = [];
+  while (n > 127) {
+    out.push((n & 127) | 128);
+    n >>>= 7;
+  }
+  out.push(n);
+  return out;
+}
+const field = (num: number, wire: number) => varint((num << 3) | wire);
+const bytesField = (num: number, data: number[]) => [...field(num, 2), ...varint(data.length), ...data];
+const stringField = (num: number, str: string) => bytesField(num, [...new TextEncoder().encode(str)]);
+const varintField = (num: number, n: number) => [...field(num, 0), ...varint(n)];
+
+/** The `tfs` value of a Google Flights results URL, with every airport listed on each side. */
+export function googleTfs(q: LegQuery): string {
+  const flight = (from: string[], to: string[], date: string) => [
+    ...stringField(2, date),
+    ...(q.maxStops <= 2 ? varintField(5, q.maxStops) : []),
+    ...from.flatMap((a) => bytesField(13, stringField(2, a))),
+    ...to.flatMap((a) => bytesField(14, stringField(2, a))),
+  ];
+  const legs = [flight(q.from, q.to, q.departFrom)];
+  if (q.returnFrom) legs.push(flight(q.to, q.from, q.returnFrom));
+  const pax = [
+    ...Array(q.passengers.adults).fill(1),
+    ...Array(q.passengers.children).fill(2),
+    ...Array(q.passengers.infants).fill(4),
+  ];
+  const info = [
+    ...legs.flatMap((l) => bytesField(3, l)),
+    ...bytesField(8, pax.flatMap(varint)),
+    ...varintField(9, SEAT[q.cabin]),
+    ...varintField(19, q.returnFrom ? 1 : 2),
+  ];
+  return Buffer.from(info).toString("base64");
+}
+
+export function googlePageUrl(q: LegQuery): string {
+  const p = new URLSearchParams({ tfs: googleTfs(q), hl: "en-GB", curr: q.currency, gl: "uk" });
+  return `https://www.google.com/travel/flights/search?${p}`;
+}
+
+type GoogleResults = ReturnType<FF["parseRpcResponse"]>;
+
+async function searchByRequest(q: LegQuery, ff: FF, signal?: AbortSignal): Promise<GoogleResults> {
+  const params = new URLSearchParams({ hl: "en-GB", curr: q.currency });
+  const res = await fetch(`${RPC_URL}?${params}`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
+      "User-Agent": UA,
+      Referer: "https://www.google.com/travel/flights/search",
+      Origin: "https://www.google.com",
+    },
+    body: googleRpcBody(q),
+    signal: AbortSignal.any([AbortSignal.timeout(30_000), ...(signal ? [signal] : [])]),
+  });
+  const text = await res.text();
+  if (!res.ok) throw new HttpStatusError(res.status, "Google");
+  if (text.includes("g-recaptcha") || text.includes('id="captcha"')) throw new HttpStatusError(res.status, "Google", "CaptchaError");
+  try {
+    return ff.parseRpcResponse(text);
+  } catch (e) {
+    if ((e as Error).name === "ParseError" && /missing flight data/i.test((e as Error).message)) return Object.assign([], { metadata: { airlines: [], alliances: [] } });
+    throw e;
+  }
+}
+
+const isGoogleCheck = async (page: import("playwright").Page) =>
+  /\/sorry\//.test(page.url()) || (await page.locator("#captcha-form, iframe[src*='recaptcha']").count()) > 0;
+
+/** Open the results page in the FlightBuzz browser window and read the flights from it. */
+async function searchInBrowser(q: LegQuery, ff: FF): Promise<GoogleResults> {
+  const url = googlePageUrl(q);
+  return withTab("google", async (page) => {
+    // The page may fetch more results after loading; collect those too.
+    const rpc: Promise<string>[] = [];
+    const onResponse = (r: import("playwright").Response) => {
+      if (r.url().includes("GetShoppingResults")) rpc.push(r.text().catch(() => ""));
+    };
+    page.on("response", onResponse);
+    try {
+      let resp = await page.goto(url, { waitUntil: "domcontentloaded", timeout: 45_000 });
+      if (/consent\.google\./.test(page.url())) {
+        // Cookie screen: accept once; the saved profile remembers it.
+        await clickIfPresent(page, [/accept all/i, /i agree/i, /agree/i], 5000);
+        await page.waitForURL(/travel\/flights/, { timeout: 20_000 }).catch(() => undefined);
+        resp = await page.goto(url, { waitUntil: "domcontentloaded", timeout: 45_000 });
+      }
+      if (await isGoogleCheck(page)) {
+        await waitForHuman(page, "Google Flights", isGoogleCheck);
+        resp = await page.goto(url, { waitUntil: "domcontentloaded", timeout: 45_000 });
+      }
+      if (resp && resp.status() >= 400) throw new HttpStatusError(resp.status(), "Google");
+      await settle(page);
+      // Expand the list like a person would; Google may fetch more results.
+      if (await clickIfPresent(page, [/view more flights/i, /more flights/i], 1500)) await page.waitForTimeout(2500 + Math.random() * 1500);
+      const results: GoogleResults = Object.assign([], { metadata: { airlines: [], alliances: [] } });
+      const html = resp ? await resp.text().catch(() => "") : "";
+      try {
+        if (html) results.push(...ff.parse(html));
+      } catch {
+        /* no embedded results */
+      }
+      for (const t of await Promise.all(rpc)) {
+        try {
+          if (t) results.push(...ff.parseRpcResponse(t));
+        } catch {
+          /* not a results payload */
+        }
+      }
+      return results;
+    } finally {
+      page.off("response", onResponse);
+    }
+  });
+}
+
 export const googleProvider: FlightProvider = {
   id: "google",
   name: "Google Flights",
@@ -93,32 +217,15 @@ export const googleProvider: FlightProvider = {
   async search(q: LegQuery, ctx): Promise<Fare[]> {
     const ff = await load();
     if (!ff) throw new Error("fast-flights-ts is not installed");
-    let results: ReturnType<FF["parseRpcResponse"]>;
+    let results: GoogleResults;
     try {
-      const params = new URLSearchParams({ hl: "en-GB", curr: q.currency });
-      const res = await fetch(`${RPC_URL}?${params}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
-          "User-Agent": UA,
-          Referer: "https://www.google.com/travel/flights/search",
-          Origin: "https://www.google.com",
-        },
-        body: googleRpcBody(q),
-        signal: AbortSignal.any([AbortSignal.timeout(30_000), ...(ctx.signal ? [ctx.signal] : [])]),
-      });
-      const text = await res.text();
-      if (!res.ok) throw new HttpStatusError(res.status, "Google");
-      if (text.includes("g-recaptcha") || text.includes('id="captcha"')) throw new HttpStatusError(res.status, "Google", "CaptchaError");
-      results = ff.parseRpcResponse(text);
+      results = (await browserAvailable()) ? await searchInBrowser(q, ff) : await searchByRequest(q, ff, ctx.signal);
     } catch (e) {
       googleGate.onError(e);
-      // An empty result set is not an error.
-      if ((e as Error).name === "ParseError" && /missing flight data/i.test((e as Error).message)) return [];
       throw e;
     }
     const fetchedAt = new Date().toISOString();
-    const fares: Fare[] = [];
+    const fares = new Map<string, Fare>();
     for (const r of results) {
       if (!r.price || !r.flights.length) continue;
       const segments: Segment[] = r.flights.map((f, i) => ({
@@ -145,17 +252,19 @@ export const googleProvider: FlightProvider = {
       const out = slice(outSegs);
       const isReturn = !!q.returnFrom;
       const slices = isReturn && backSegs.length ? [out, slice(backSegs)] : [out];
-      fares.push({
-        id: `google:${isReturn ? `rt${q.returnFrom}:` : ""}${segments.map((s) => `${s.from}${s.to}${s.departLocal}${s.carrier}`).join("|")}`,
+      const id = `google:${isReturn ? `rt${q.returnFrom}:` : ""}${segments.map((s) => `${s.from}${s.to}${s.departLocal}`).join("|")}`;
+      if (fares.has(id) && fares.get(id)!.price <= r.price) continue;
+      fares.set(id, {
+        id,
         provider: "google",
         price: r.price,
         currency: q.currency,
         slices,
         ...(isReturn && slices.length === 1 ? { openReturn: { date: q.returnFrom!, from: q.to, to: q.from } } : {}),
-        deepLink: googleFlightsUrl({ from: out.from, to: out.to, date: out.departLocal.slice(0, 10), returnDate: q.returnFrom, currency: q.currency }),
+        deepLink: googlePageUrl(q),
         fetchedAt,
       });
     }
-    return fares;
+    return [...fares.values()];
   },
 };

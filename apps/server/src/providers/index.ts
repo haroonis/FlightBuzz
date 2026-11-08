@@ -3,14 +3,19 @@ import { config } from "../config.ts";
 import { demoProvider } from "./demo.ts";
 import { googleGate, googleProvider } from "./google.ts";
 import { kiwiGate, kiwiProvider } from "./kiwi.ts";
+import { skyscannerGate, skyscannerProvider } from "./skyscanner.ts";
 import type { FlightProvider } from "./types.ts";
 
-/** Every provider FlightBuzz knows. Skyscanner and Kayak are deep links only (see docs/DATA_SOURCES.md). */
-export const ALL_PROVIDERS: FlightProvider[] = [googleProvider, kiwiProvider, demoProvider];
+/** Every provider FlightBuzz knows. Kayak is deep links only (see docs/DATA_SOURCES.md). */
+export const ALL_PROVIDERS: FlightProvider[] = [googleProvider, kiwiProvider, skyscannerProvider, demoProvider];
+
+const GATES: Record<string, { note(): string }> = { google: googleGate, kiwi: kiwiGate, skyscanner: skyscannerGate };
 
 async function isEnabled(p: FlightProvider, realConfigured: boolean): Promise<boolean> {
   if (config.providers.length) return config.providers.includes(p.id);
   if (p.id === "demo") return config.demo ?? !realConfigured;
+  // One page per airport pair and date: only when asked for.
+  if (p.id === "skyscanner") return false;
   // Unofficial Google scraping is on by default when the package is installed.
   return !!(await p.configured());
 }
@@ -25,7 +30,7 @@ export async function providerInfo(): Promise<ProviderInfo[]> {
       configured: configured[i],
       enabled: configured[i] && (await isEnabled(p, realConfigured)),
       capabilities: p.capabilities,
-      note: p.id === "google" ? `${p.note} ${googleGate.note()}` : p.id === "kiwi" ? `${p.note} ${kiwiGate.note()}` : p.note,
+      note: GATES[p.id] ? `${p.note} ${GATES[p.id].note()}` : p.note,
     })),
   );
 }
