@@ -77,6 +77,18 @@ export function OptionsPanel({ spec, onChange }: Props) {
           <span className="small muted">Included in Kiwi prices. Google shows base fares.</span>
         </label>
 
+        {spec.return.type !== "oneway" && (
+          <label className="check field">
+            <input
+              type="checkbox"
+              checked={!!spec.returnTicketsOnly}
+              onChange={(e) => onChange({ returnTicketsOnly: e.target.checked || undefined })}
+            />
+            Return tickets only
+            <span className="small muted block">Skips one-way and separate-ticket combinations: fewer pages, faster.</span>
+          </label>
+        )}
+
         <label className="field">
           <span className="field-label">Currency</span>
           <select value={spec.currency} onChange={(e) => onChange({ currency: e.target.value })}>

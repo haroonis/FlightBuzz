@@ -60,5 +60,9 @@ describe("checked bags", () => {
     expect(formatDsl(spec!)).toContain("bags 1");
     expect(parseDsl(formatDsl(spec!)).spec!.holdBags).toBe(1);
     expect(validateSpec({ ...spec!, holdBags: 3 }).map((p) => p.field)).toContain("holdBags");
+    const rt = pathToSpec("/search/MAN/LHE/2026-12-16/2027-01-01?returnonly=1").spec!;
+    expect(rt.returnTicketsOnly).toBe(true);
+    expect(specToPath(rt)).toContain("returnonly=1");
+    expect(parseDsl(formatDsl(rt)).spec!.returnTicketsOnly).toBe(true);
   });
 });

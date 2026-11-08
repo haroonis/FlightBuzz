@@ -128,3 +128,12 @@ describe("return tickets", () => {
     expect(trips[0].tags).toContain("return-ticket");
   });
 });
+
+describe("return tickets only", () => {
+  it("plans just the return-ticket query", () => {
+    const s = spec({ return: { type: "dates", range: { from: "2026-12-31", to: "2027-01-03" } }, returnTicketsOnly: true, stopovers: [{ direction: "both", stops: [{ places: ["@uae"], minNights: 0, maxNights: 2 }] }] });
+    const plan = planSearch(s);
+    expect(plan.routes).toHaveLength(0);
+    expect(Object.keys(plan.legs)).toEqual([plan.returnLegKey]);
+  });
+});

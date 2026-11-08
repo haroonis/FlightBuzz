@@ -18,6 +18,7 @@ import type { Cabin, DateRange, Direction, SearchSpec, StopoverStop } from "./ty
  *   ground 4h | noground
  *   adults N, children N, infants N, bags N (checked bags per person), economy|premium|business|first
  *   cur GBP            currency; providers google,kiwi
+ *   returnonly         single return tickets only
  */
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
@@ -140,6 +141,8 @@ export function parseDsl(text: string): DslResult {
       const c = next();
       if (!c || !/^[a-z]{3}$/i.test(c)) return fail("cur needs a currency code");
       spec.currency = c.toUpperCase();
+    } else if (t === "returnonly") {
+      spec.returnTicketsOnly = true;
     } else if (t === "providers") {
       spec.providers = (next() ?? "").split(",").filter(Boolean);
     } else if (!spec.origins.length) {
@@ -182,5 +185,6 @@ export function formatDsl(spec: SearchSpec): string {
   if (spec.cabin !== DEFAULTS.cabin) parts.push(spec.cabin);
   if (spec.currency !== DEFAULTS.currency) parts.push(`cur ${spec.currency}`);
   if (spec.providers.length) parts.push(`providers ${spec.providers.join(",")}`);
+  if (spec.returnTicketsOnly) parts.push("returnonly");
   return parts.join(" ");
 }

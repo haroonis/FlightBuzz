@@ -62,6 +62,8 @@ export interface SearchSpec {
   /** Max hours for a ground transfer between airports. */
   maxGroundHours: number;
   stopovers: StopoverPlan[];
+  /** Only price single return tickets (no one-way or separate-ticket combinations). */
+  returnTicketsOnly?: boolean;
   currency: string;
   /** Provider ids to query; empty = all enabled. */
   providers: string[];

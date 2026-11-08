@@ -12,7 +12,8 @@ import type { Cabin, DateRange, Direction, SearchSpec, StopoverPlan } from "./ty
  *   return  2027-01-05_2027-01-12 | 7-14-nights | no-return
  * Query (all optional, defaults omitted):
  *   stops, layover (hours), selftransfer (minutes), ground (0|hours), adults,
- *   children, infants, bags (checked bags per person), cabin, cur, providers, via (repeatable)
+ *   children, infants, bags (checked bags per person), cabin, cur, providers,
+ *   returnonly (1 = single return tickets only), via (repeatable)
  *   via = [out.|back.]{places}:{min}[-{max}][~{places}:{min}[-{max}]...]
  */
 
@@ -73,6 +74,7 @@ export function specToPath(spec: SearchSpec): string {
   if (spec.cabin !== DEFAULTS.cabin) add("cabin", spec.cabin);
   if (spec.currency !== DEFAULTS.currency) add("cur", spec.currency);
   if (spec.providers.length) add("providers", spec.providers.join(","));
+  if (spec.returnTicketsOnly) add("returnonly", 1);
   for (const plan of spec.stopovers) add("via", formatVia(plan));
   return q.length ? `${path}?${q.join("&")}` : path;
 }
@@ -129,6 +131,7 @@ export function pathToSpec(input: string): ParseResult {
   if (cabin) spec.cabin = cabin as Cabin;
   const cur = params.get("cur");
   if (cur) spec.currency = cur.toUpperCase();
+  if (params.get("returnonly") === "1") spec.returnTicketsOnly = true;
   const providers = params.get("providers");
   if (providers) spec.providers = providers.split(",").filter(Boolean);
   for (const v of params.getAll("via")) {

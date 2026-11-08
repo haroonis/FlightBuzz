@@ -100,11 +100,12 @@ export function planSearch(spec: SearchSpec, reg: GroupRegistry = defaultRegistr
       });
   };
 
-  addDirection("out", origins, dests, spec.depart);
   const bw = backWindow(spec);
+  const returnOnly = !!(spec.returnTicketsOnly && bw);
+  if (!returnOnly) addDirection("out", origins, dests, spec.depart);
   let returnLegKey: string | undefined;
   if (bw) {
-    addDirection("back", dests, origins, bw);
+    if (!returnOnly) addDirection("back", dests, origins, bw);
     const q: LegQuery = {
       from: origins,
       to: dests,
