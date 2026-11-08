@@ -14,9 +14,8 @@ const GATES: Record<string, { note(): string }> = { google: googleGate, kiwi: ki
 async function isEnabled(p: FlightProvider, realConfigured: boolean): Promise<boolean> {
   if (config.providers.length) return config.providers.includes(p.id);
   if (p.id === "demo") return config.demo ?? !realConfigured;
-  // One page per airport pair and date: only when asked for.
-  if (p.id === "skyscanner") return false;
-  // Unofficial Google scraping is on by default when the package is installed.
+  // Google Flights is the source by default; the others only when asked for.
+  if (p.id === "kiwi" || p.id === "skyscanner") return false;
   return !!(await p.configured());
 }
 

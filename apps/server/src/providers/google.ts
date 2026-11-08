@@ -7,8 +7,9 @@ import { sliceDuration, type FlightProvider } from "./types.ts";
 /**
  * Google Flights. Two ways in, both free and with several airports per side:
  *   - browser (default): opens the Google Flights results page in the FlightBuzz
- *     browser window (a real, kept-open window with a saved profile) and reads
- *     the results from the page, like a person browsing
+ *     browser window (a real, kept-open window with a saved profile), clicks the
+ *     "Cheapest" tab and "View more flights", and reads the results, like a
+ *     person browsing
  *   - direct (BROWSER=off): calls the endpoint the Google Flights page uses
  * The open-source `fast-flights-ts` package reads Google's answer.
  * Unofficial: it can break when Google changes things, and heavy use gets
@@ -176,6 +177,14 @@ async function searchInBrowser(q: LegQuery, ff: FF): Promise<GoogleResults> {
       }
       if (resp && resp.status() >= 400) throw new HttpStatusError(resp.status(), "Google");
       await settle(page);
+      // Switch to the "Cheapest" tab: Google then loads the price-sorted results.
+      const cheapest = page.getByRole("tab", { name: /cheapest/i }).first();
+      if ((await cheapest.isVisible({ timeout: 3000 }).catch(() => false)) && (await cheapest.getAttribute("aria-selected")) !== "true") {
+        const before = rpc.length;
+        await cheapest.click();
+        for (let waited = 0; rpc.length === before && waited < 8000; waited += 250) await page.waitForTimeout(250);
+        await page.waitForTimeout(1500 + Math.random() * 1500);
+      }
       // Expand the list like a person would; Google may fetch more results.
       if (await clickIfPresent(page, [/view more flights/i, /more flights/i], 1500)) await page.waitForTimeout(2500 + Math.random() * 1500);
       const results: GoogleResults = Object.assign([], { metadata: { airlines: [], alliances: [] } });

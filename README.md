@@ -33,12 +33,14 @@ Google Flights and Skyscanner are read through **a real, visible browser window*
 
 ### Sources
 
-FlightBuzz uses **free sources only**:
+**Google Flights is the source.** FlightBuzz opens its results page in the browser window with all airports on each side, clicks the **Cheapest** tab and "View more flights", and reads the flights.
 
-- **Google Flights**, through its results page in the browser window, with all airports on each side in one page.
-- **Kiwi.com**, through the API kiwi.com itself uses: one request per leg covering all airports and dates, including Kiwi's separate-ticket deals.
-- **Skyscanner** (opt-in), through its results page in the browser window. It covers one airport pair per page, so tick it for a search or add it to `PROVIDERS`.
-- **Kayak:** "check this price" links only.
+Optional extras, off unless you tick them for a search or add them to `PROVIDERS`:
+
+- **Kiwi.com**, through the API kiwi.com itself uses, including Kiwi's separate-ticket deals.
+- **Skyscanner**, through its results page in the browser window. It covers one airport pair per page.
+
+Kayak appears as "check this price" links only.
 
 Everything is fetched slowly on purpose: one request at a time, 30–80 s apart, with a 3-hour pause if a site pushes back. A big search therefore takes minutes rather than seconds, which suits the twice-daily refresh. See [docs/DATA_SOURCES.md](docs/DATA_SOURCES.md) for details and [.env.example](.env.example) for settings. To try the app without touching any real site, run `PROVIDERS=demo npm start`.
 

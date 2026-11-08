@@ -10,8 +10,8 @@ FlightBuzz uses **no paid APIs**. Where it has to scrape, it asks slowly enough 
 
 | Source | How | Cost | In FlightBuzz |
 |---|---|---|---|
-| **Google Flights** | Opens the Google Flights results page in the FlightBuzz browser window (a real, kept-open window with a saved profile) and reads the flights from it, with up to 7 airports per side. With `BROWSER=off` it calls the page's own endpoint directly instead. `fast-flights-ts` reads Google's data. Verified live. | Free | ✅ `google`, on by default |
-| **Kiwi.com** | The GraphQL API kiwi.com itself uses (`api.skypicker.com/umbrella/v2/graphql`). One request covers several airports per side, a whole date range, and return trips, and includes Kiwi's self-transfer deals on budget airlines. Verified live. | Free | ✅ `kiwi`, on by default |
+| **Google Flights** | Opens the Google Flights results page in the FlightBuzz browser window (a real, kept-open window with a saved profile), clicks **Cheapest** and "View more flights", and reads the flights, with up to 7 airports per side. **The default and main source.** With `BROWSER=off` it calls the page's own endpoint directly instead. `fast-flights-ts` reads Google's data. Verified live. | Free | ✅ `google`, on by default |
+| **Kiwi.com** | The GraphQL API kiwi.com itself uses (`api.skypicker.com/umbrella/v2/graphql`). One request covers several airports per side, a whole date range, and return trips, and includes Kiwi's self-transfer deals on budget airlines. Verified live. | Free | ✅ `kiwi`, opt-in |
 | Kiwi.com Tequila | Official API, only for approved partners since May 2024 | — | ❌ not needed |
 | Travelpayouts / Aviasales Data API | Free token. Cached prices users saw in the last 48 h; thin on small airports. | Free | ❌ planned as a pre-filter |
 | Ryanair / Wizz Air | Unofficial cheapest-fare-per-day endpoints | Free | ❌ planned for European legs |
