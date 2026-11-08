@@ -27,3 +27,21 @@ describe("fetchPlan", () => {
     expect(stats.errors.some((e) => e.includes("paused"))).toBe(true);
   });
 });
+
+describe("shared pacing", () => {
+  it("keeps the pause between requests even when two searches run at once", async () => {
+    const { fetchPlan } = await import("../src/fetcher.ts");
+    const starts: number[] = [];
+    const ends: number[] = [];
+    const provider = {
+      id: "paced", name: "Paced", note: "", concurrency: 1, minDelayMs: 150,
+      capabilities: { multiAirport: true, dateRange: false, returnFares: false },
+      configured: () => true,
+      async search() { starts.push(Date.now()); await new Promise((r) => setTimeout(r, 20)); ends.push(Date.now()); return []; },
+    };
+    const spec = (to: string) => ({ ...defaultSpec(), origins: ["MAN"], destinations: [to], depart: { from: "2026-12-01", to: "2026-12-02" }, return: { type: "oneway" as const } });
+    await Promise.all([fetchPlan(planSearch(spec("LHE")), [provider]), fetchPlan(planSearch(spec("ISB")), [provider])]);
+    expect(starts).toHaveLength(4);
+    for (let i = 1; i < starts.length; i++) expect(starts[i] - ends[i - 1]).toBeGreaterThanOrEqual(145);
+  });
+});

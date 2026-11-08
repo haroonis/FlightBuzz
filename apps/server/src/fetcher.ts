@@ -24,30 +24,37 @@ interface Task {
   legKeys: Set<string>;
 }
 
+const lastRequestEnd = new Map<string, number>();
+const providerChains = new Map<string, Promise<unknown>>();
+
 /**
- * Run tasks with a concurrency cap. Each worker rests `minDelayMs` plus up to
- * 75% random jitter after every request, so requests never come in bursts.
- * Items for which `skip` returns true are passed over without a request or a pause.
+ * Run one live request for a provider, shared across every search running in
+ * this server: one request at a time per provider, with a rest of
+ * `minDelayMs` plus up to 75% random jitter after the previous one ended.
+ * Providers that allow parallel requests and need no pause run straight away.
  */
-async function pool<T>(
-  items: T[],
-  concurrency: number,
-  minDelayMs: number,
-  fn: (item: T) => Promise<void>,
-  skip: (item: T) => boolean,
-  signal?: AbortSignal,
-) {
+function paced<T>(provider: FlightProvider, fn: () => Promise<T>): Promise<T> {
+  if (!provider.minDelayMs && provider.concurrency > 1) return fn();
+  const prev = providerChains.get(provider.id) ?? Promise.resolve();
+  const run = prev
+    .catch(() => undefined)
+    .then(async () => {
+      const last = lastRequestEnd.get(provider.id);
+      if (last !== undefined) {
+        const wait = last + provider.minDelayMs * (1 + Math.random() * 0.75) - Date.now();
+        if (wait > 0) await new Promise((r) => setTimeout(r, wait));
+      }
+      return fn();
+    });
+  providerChains.set(provider.id, run);
+  return run;
+}
+
+/** Run tasks with a concurrency cap (the pacing itself lives in `paced`). */
+async function pool<T>(items: T[], concurrency: number, fn: (item: T) => Promise<void>, signal?: AbortSignal) {
   let next = 0;
   const worker = async () => {
-    let first = true;
-    while (next < items.length && !signal?.aborted) {
-      const item = items[next++];
-      if (skip(item)) continue;
-      if (!first && minDelayMs) await new Promise((r) => setTimeout(r, minDelayMs * (1 + Math.random() * 0.75)));
-      first = false;
-      if (skip(item)) continue; // provider may have paused while we rested
-      await fn(item);
-    }
+    while (next < items.length && !signal?.aborted) await fn(items[next++]);
   };
   await Promise.all(Array.from({ length: Math.max(1, concurrency) }, worker));
 }
@@ -105,33 +112,47 @@ export async function fetchPlan(plan: SearchPlan, providers: FlightProvider[], o
   }
   opts.onProgress?.(done, total);
 
+  const skip = (provider: FlightProvider, reason: string) => {
+    stats.skippedRequests++;
+    const note = `${provider.name}: ${reason}`;
+    if (!stats.errors.includes(note)) stats.errors.push(note);
+  };
+
   await Promise.all(
     [...live.entries()].map(([provider, list]) =>
       pool(
         list,
         provider.concurrency,
-        provider.minDelayMs,
         async (t) => {
           try {
-            stats.requests++;
-            provider.onRequest?.();
-            const fares = await provider.search(t.query, { signal: opts.signal });
-            cachePut(t.cacheKey, fares);
-            deliver(t, fares);
+            const fares = await paced(provider, async () => {
+              // Another search may have fetched this meanwhile, or the provider may have paused.
+              const cached = cacheGet(t.cacheKey, config.cacheTtlMinutes);
+              if (cached) {
+                stats.cachedRequests++;
+                return cached;
+              }
+              const reason = provider.unavailable?.();
+              if (reason) {
+                skip(provider, reason);
+                return null;
+              }
+              stats.requests++;
+              provider.onRequest?.();
+              try {
+                const fresh = await provider.search(t.query, { signal: opts.signal });
+                cachePut(t.cacheKey, fresh);
+                return fresh;
+              } finally {
+                lastRequestEnd.set(provider.id, Date.now());
+              }
+            });
+            if (fares) deliver(t, fares);
           } catch (e) {
             if (stats.errors.length < 25) stats.errors.push(`${provider.name} ${t.query.from.join(",")}→${t.query.to.join(",")} ${t.query.departFrom}: ${(e as Error).message}`);
           } finally {
             tick();
           }
-        },
-        () => {
-          const reason = provider.unavailable?.();
-          if (!reason) return false;
-          stats.skippedRequests++;
-          const note = `${provider.name}: ${reason}`;
-          if (!stats.errors.includes(note)) stats.errors.push(note);
-          tick();
-          return true;
         },
         opts.signal,
       ),
