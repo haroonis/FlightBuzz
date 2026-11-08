@@ -34,4 +34,12 @@ export const BUILTIN_GROUPS: AirportGroup[] = [
   { slug: "new-york", name: "New York (all)", members: ["JFK", "EWR", "LGA"] },
   { slug: "tokyo", name: "Tokyo (all)", members: ["HND", "NRT"] },
   { slug: "europe-hubs", name: "European hubs", members: ["AMS", "FRA", "CDG", "MUC", "IST", "ZRH", "VIE"] },
+  // Found with Google Flights on 8 Nov 2026: one-stop single tickets on 16 Dec to Lahore,
+  // Multan or Faisalabad. A minimum list: Google shows ~10 flights per page.
+  {
+    slug: "europe-pk-1stop",
+    name: "Europe with 1-stop to Punjab (PK)",
+    members: ["AMS", "ARN", "ATH", "BCN", "BEG", "BER", "BHX", "BLQ", "BRU", "BUD", "CDG", "CGN", "CPH", "DUB", "DUS", "EDI", "FCO", "FRA", "GLA", "GOT", "GVA", "HAJ", "HAM", "HEL", "LGW", "LHR", "LIS", "LUX", "MAD", "MAN", "MUC", "MXP", "NAP", "NCL", "NUE", "OPO", "OSL", "OTP", "SOF", "STN", "STR", "TIA", "VCE", "VIE", "VLC", "WAW", "ZRH"],
+  },
+  { slug: "lhe-mux-lyp", name: "Lahore, Multan, Faisalabad", members: ["LHE", "MUX", "LYP"] },
 ].map((g) => ({ ...g, builtin: true }));
