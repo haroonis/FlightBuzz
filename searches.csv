@@ -1,0 +1,32 @@
+# FlightBuzz search plans. One line = one plan; the app turns each into as many Google pages as it needs.
+# Edit freely (spreadsheet or text editor). Lists inside a cell are separated by spaces. Lines starting with # are ignored.
+# Run:  npm run searches -- list            show every plan and any problems
+#       npm run searches -- run primary     run one plan, or a whole group, or "all"
+# Columns: see packages/core/src/searchFile.ts. Places: MAN airport, @north-england group, PK country, PK-PB region.
+# Dates: 2026-12-16..2026-12-17 · return: date range, oneway, or "14-21 nights" · via: "@uae 0-2n" or "out IST 1n; back DOH 0n"
+id,enabled,group,kind,from,to,depart,return,stops,layover_h,via,airlines,nearby_km,return_only,bags,adults,top,track,notes
+primary,yes,primary,search,MAN LPL LBA,LHE MUX LYP,2026-12-16..2026-12-17,2026-12-31..2027-01-03,2,48,@uae 0-2n,,,no,0,1,,yes,Main search: Manchester area to Punjab. Return tickets + one-way pairs + separate tickets via the UAE with 0-2 nights
+primary-isb-skt,yes,primary,search,MAN LPL LBA LHR LGW BHX MAD BCN LIS MXP NAP ATH FCO FRA,ISB SKT,2026-12-16..2026-12-17,2026-12-31..2027-01-03,1,,,,,yes,0,1,,no,Islamabad/Sialkot then road to Lahore (coach ~4.5h / car ~2h)
+best-fares,yes,primary,search,BGY NAP,MUX LYP LHE,2026-12-16..2026-12-17,2026-12-31..2027-01-01,1,,,FZ,,yes,0,1,,yes,Track the cheapest finds: flydubai Bergamo/Naples returns (£512-515 on 9 Nov)
+europe-1stop,yes,europe,search,@europe-pk-1stop,LHE MUX LYP,2026-12-16..2026-12-17,2026-12-31..2027-01-03,1,,,,,yes,0,1,,no,47 European airports with 1-stop single tickets (found 8 Nov)
+europe-sweep,yes,europe,sweep,@europe,MUX LHE LYP,2026-12-16..2026-12-17,2026-12-31..2027-01-03,2,,,,,yes,0,1,7,no,Every European airport: scan one date pair then search the cheapest 7 in full
+flydubai,yes,budget-airlines,search,BGY NAP CTA PRG BUD KRK WAW POZ KTW SZG BEG SJJ TIA SOF ZAG OTP LJU IAS RMO RIX VNO BTS HEL BER TLL IST SAW,MUX LHE LYP,2026-12-16..2026-12-17,2026-12-31..2027-01-03,1,,,FZ,,yes,0,1,,no,flydubai's European airports (some unconfirmed; Google shows which fly in Dec)
+airarabia,yes,budget-airlines,search,ATH BGY FCO VIE KRK WAW KTW PRG LGW DUS FRA MUC IST SAW SOF OTP BUD MXP,MUX LHE LYP,2026-12-16..2026-12-17,2026-12-31..2027-01-03,1,,,G9 3L 9P,,yes,0,1,,no,Air Arabia + Fly Jinnah European airports (incl. Gatwick; Düsseldorf from 16 Dec)
+budget-to-gulf,yes,budget-airlines,search,MAN LPL LBA BHX LHR LGW STN LTN EDI GLA NCL BRS EMA BGY CIA FCO MXP NAP MAD BCN LIS ATH BUD KRK KTW WAW OTP SOF VIE PRG BER AMS CDG FRA MUC DUS BRU CPH ARN OSL IST SAW LCA,DXB SHJ AUH LHE MUX LYP,2026-12-15..2026-12-16,oneway,1,,,FZ G9 3L 9P W6 W4 W9,,no,0,1,,no,Budget airlines one-way Europe to UAE or straight on to Pakistan
+budget-from-gulf,yes,budget-airlines,search,DXB SHJ AUH LHE MUX LYP,MAN LPL LBA BHX LHR LGW STN LTN EDI GLA NCL BRS EMA BGY CIA FCO MXP NAP MAD BCN LIS ATH BUD KRK KTW WAW OTP SOF VIE PRG BER AMS CDG FRA MUC DUS BRU CPH ARN OSL IST SAW LCA,2026-12-31..2027-01-02,oneway,1,,,FZ G9 3L 9P W6 W4 W9,,no,0,1,,no,Budget airlines one-way back to Europe
+budget-gulf-pk,yes,budget-airlines,search,DXB SHJ AUH,MUX LHE LYP,2026-12-16..2026-12-18,2026-12-31..2027-01-03,0,,,FZ G9 3L 9P,,yes,0,1,,no,UAE to Pakistan returns on budget airlines
+gulf-pk,yes,gulf,search,DXB SHJ AUH DWC BAH DOH KWI MCT RKT TAS KUL,LHE MUX LYP,2026-12-16..2026-12-18,2026-12-31..2027-01-03,1,,,,,yes,0,1,,no,Cheap returns into Pakistan from Gulf and Asian hubs (best: Kuwait £223)
+gulf-pk-2,yes,gulf,search,DMM JED MED RUH BKK URC ALA,LHE MUX LYP,2026-12-16..2026-12-18,2026-12-31..2027-01-03,1,,,,,yes,0,1,,no,More hubs: Saudi airports + Bangkok + Urumqi + Almaty
+uk-gulf-returns,yes,gulf,search,MAN LPL LBA,DXB SHJ AUH DWC,2026-12-16..2026-12-17,2026-12-31..2027-01-04,1,,,,,yes,0,1,,no,First half of "two returns via the Gulf"
+europe-gulf-out,yes,gulf,search,MAN LPL LBA BHX LHR LGW STN LTN EDI GLA NCL BRS EMA BGY CIA FCO MXP NAP MAD BCN LIS ATH BUD KRK KTW WAW OTP SOF VIE PRG BER AMS CDG FRA MUC DUS BRU CPH ARN OSL IST SAW LCA,DXB SHJ AUH DOH BAH MCT KWI,2026-12-15..2026-12-16,oneway,1,,,,,no,0,1,,no,Europe/UK to Gulf one-way (targets: under £120)
+gulf-europe-back,yes,gulf,search,DXB SHJ AUH DOH BAH MCT KWI,MAN LPL LBA BHX LHR LGW STN LTN EDI GLA NCL BRS EMA BGY CIA FCO MXP NAP MAD BCN LIS ATH BUD KRK KTW WAW OTP SOF VIE PRG BER AMS CDG FRA MUC DUS BRU CPH ARN OSL IST SAW LCA,2027-01-01..2027-01-02,oneway,1,,,,,no,0,1,,no,Gulf to Europe/UK one-way (targets: under £120)
+europe-gulf-returns,yes,gulf,search,MAN LPL LBA BHX LHR LGW STN LTN EDI GLA NCL BRS EMA BGY CIA FCO MXP NAP MAD BCN LIS ATH BUD KRK KTW WAW OTP SOF VIE PRG BER AMS CDG FRA MUC DUS BRU CPH ARN OSL IST SAW LCA,DXB SHJ AUH DOH BAH MCT KWI,2026-12-15..2026-12-16,2027-01-01..2027-01-02,1,,,,,yes,0,1,,no,Europe/UK to Gulf returns (targets: under £200)
+pos-hubs-out,yes,positioning,search,MAN LPL LBA,NAP ATH FCO MAD BCN LIS MXP,2026-12-15..2026-12-16,oneway,0,,,,,no,0,1,,no,Direct flights to the cheap long-haul starting points the day before
+pos-hubs-back,yes,positioning,search,NAP ATH FCO MAD BCN LIS MXP,MAN LPL LBA,2027-01-01..2027-01-04,oneway,0,,,,,no,0,1,,no,Direct flights home the day after
+pos-budget-out,yes,positioning,search,MAN LPL LBA,BGY CIA NRN CRL BVA GRO REU,2026-12-15..2026-12-16,oneway,0,,,,,no,0,1,,no,Budget airports next to the hubs (bus/train transfer)
+pos-budget-back,yes,positioning,search,BGY CIA NRN CRL BVA GRO REU,MAN LPL LBA,2027-01-01..2027-01-04,oneway,0,,,,,no,0,1,,no,
+pos-italy-out,yes,positioning,search,MAN LPL LBA BHX LHR LGW STN LTN EDI GLA NCL BRS EMA,NAP FCO CIA BRI BGY MXP,2026-12-15..2026-12-16,oneway,0,,,,,no,0,1,,no,All UK airports to Naples / Rome / Bari / Milan
+pos-italy-back,yes,positioning,search,NAP FCO CIA BRI BGY MXP,MAN LPL LBA BHX LHR LGW STN LTN EDI GLA NCL BRS EMA,2026-12-31..2027-01-02,oneway,0,,,,,no,0,1,,no,flydubai from Pakistan lands in Italy next morning (e.g. 11:15)
+pos-istanbul-out,no,positioning,search,MAN LPL LBA BHX LHR LGW STN LTN EDI GLA NCL BRS EMA,IST SAW,2026-12-14..2026-12-15,oneway,1,,,,,no,0,1,,no,Not worth it at Christmas (£111-190 each way); kept for reference
+pos-istanbul-back,no,positioning,search,IST SAW,MAN LPL LBA BHX LHR LGW STN LTN EDI GLA NCL BRS EMA,2027-01-01..2027-01-03,oneway,1,,,,,no,0,1,,no,
+fz-times-naples,yes,checks,search,MUX SKT,NAP BGY,2026-12-31..2027-01-01,oneway,1,,,FZ,,no,0,1,,no,When flydubai lands back in Italy (times for the connection home)

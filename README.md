@@ -67,6 +67,36 @@ Everything is fetched slowly on purpose: one request at a time, 24–63 s apart 
 | `bags` | checked bags per person to include in prices, 0–2 (default 0) |
 | `adults` `children` `infants` `cabin` `cur` `providers` | as named |
 
+## Your searches: `searches.csv`
+
+Every search plan lives in **`searches.csv`** at the top of the repo. It's plain CSV, so you can edit it in a spreadsheet or any text editor. Each line is one plan in FlightBuzz terms (airport groups, date ranges, options), not one Google page; FlightBuzz expands each line into as many site searches as it needs.
+
+```csv
+id,enabled,group,kind,from,to,depart,return,stops,layover_h,via,airlines,nearby_km,return_only,bags,adults,top,track,notes
+primary,yes,primary,search,MAN LPL LBA,LHE MUX LYP,2026-12-16..2026-12-17,2026-12-31..2027-01-03,2,48,@uae 0-2n,,,no,0,1,,yes,Main search
+flydubai,yes,budget-airlines,search,BGY NAP PRG BUD ...,MUX LHE LYP,2026-12-16..2026-12-17,2026-12-31..2027-01-03,1,,,FZ,,yes,0,1,,no,
+europe-sweep,yes,europe,sweep,@europe,MUX LHE LYP,2026-12-16..2026-12-17,2026-12-31..2027-01-03,2,,,,,yes,0,1,7,no,
+```
+
+- **Lists inside a cell** are space-separated, so cells never need quoting.
+- **Places:** `MAN` airport, `@group`, `PK` country, `PK-PB` region.
+- **Dates:** `2026-12-16..2026-12-17`.
+- **return:** a date range, `oneway`, or `14-21 nights`.
+- **via:** `@uae 0-2n`, or `out IST 1n; back DOH 0n`.
+- **enabled=no** keeps a line in the file without running it.
+- **group** lets you run or switch a whole set at once.
+- **kind=sweep** scans every origin, then searches the cheapest `top` in full.
+- **track=yes** makes the line a saved search that refreshes twice a day. The running app picks up edits within seconds.
+
+```bash
+npm run searches -- list                     # every plan, with problems and a Google-page estimate
+npm run searches -- run primary              # one plan by id
+npm run searches -- run budget-airlines      # a whole group
+npm run searches -- run all                  # every enabled plan
+```
+
+The same is available as `GET /api/plans` and `POST /api/plans/run {"selectors": ["primary"]}`. All columns are documented in `packages/core/src/searchFile.ts`.
+
 ## Wide searches: every airport in a region
 
 - **`@europe`** is every European airport with scheduled flights (about 460).

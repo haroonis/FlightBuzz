@@ -55,5 +55,7 @@ export const config = {
   skyscannerMinDelayMs: num(env.SKYSCANNER_MIN_DELAY_MS, 36000),
   skyscannerDailyLimit: num(env.SKYSCANNER_DAILY_LIMIT, 150),
   skyscannerCooldownMinutes: num(env.SKYSCANNER_COOLDOWN_MINUTES, 180),
+  /** The editable list of search plans. */
+  searchesFile: env.SEARCHES_FILE ?? path.resolve(import.meta.dirname, "../../../searches.csv"),
   webDist: path.resolve(import.meta.dirname, "../../web/dist"),
 };

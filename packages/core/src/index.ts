@@ -12,3 +12,4 @@ export * from "./links.ts";
 export * from "./engine/plan.ts";
 export * from "./engine/combine.ts";
 export * from "./api.ts";
+export * from "./searchFile.ts";

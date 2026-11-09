@@ -5,6 +5,7 @@ import { closeBrowser } from "./browser/session.ts";
 import { config } from "./config.ts";
 import { providerInfo } from "./providers/index.ts";
 import { routes } from "./routes.ts";
+import { watchPlans } from "./plans.ts";
 import { startScheduler } from "./scheduler.ts";
 
 const app = Fastify({ logger: { level: process.env.LOG_LEVEL ?? "warn" }, bodyLimit: 1_000_000 });
@@ -24,6 +25,7 @@ await app.listen({ port: config.port, host: config.host });
 const providers = await providerInfo();
 console.log(`FlightBuzz API on http://${config.host}:${config.port}`);
 console.log(`Providers: ${providers.map((p) => `${p.id}${p.enabled ? " ✓" : p.configured ? " (available)" : " ✗"}`).join(", ")}`);
+watchPlans();
 startScheduler();
 
 // Shut down cleanly (the open browser window would otherwise keep the process alive).

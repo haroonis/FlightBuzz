@@ -9,6 +9,7 @@
     "dev": "concurrently -n server,web -c blue,green \"npm:dev -w @flightbuzz/server\" \"npm:dev -w @flightbuzz/web\"",
     "build": "npm run build -w @flightbuzz/web",
     "start": "npm run start -w @flightbuzz/server",
+    "searches": "npm run searches -w @flightbuzz/server --",
     "test": "vitest run",
     "typecheck": "tsc -p packages/core && tsc -p apps/server && tsc -p apps/web",
     "data:airports": "tsx scripts/build-airports.ts"

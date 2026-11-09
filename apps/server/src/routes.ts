@@ -9,6 +9,8 @@ import {
   type MetaResponse,
   type SavedSearchInput,
   type SearchSpec,
+  selectPlans,
+  specToPath,
 } from "@flightbuzz/core";
 import { config } from "./config.ts";
 import { createSaved, deleteGroup, deleteSaved, getSaved, latestResult, listGroups, listSaved, putGroup, updateSaved } from "./db.ts";
@@ -17,6 +19,7 @@ import { browserAvailable, browserStatus, tab } from "./browser/session.ts";
 import { providerInfo } from "./providers/index.ts";
 import { registry } from "./search.ts";
 import { runSweep } from "./sweep.ts";
+import { estimatePages, loadPlans } from "./plans.ts";
 
 export async function routes(app: FastifyInstance): Promise<void> {
   // Errors as { error: "message" }.
@@ -88,6 +91,25 @@ export async function routes(app: FastifyInstance): Promise<void> {
   app.post<{ Body: { spec: SearchSpec } }>("/api/search", async (req) => {
     checkSpec(req.body?.spec);
     return { jobId: startJob(req.body.spec) };
+  });
+
+  // ---- searches.csv plans ----
+  app.get("/api/plans", async () => {
+    const { plans, problems } = loadPlans();
+    return {
+      file: config.searchesFile,
+      problems,
+      plans: plans.map((p) => ({ id: p.id, enabled: p.enabled, group: p.group, kind: p.kind, track: p.track, top: p.top, notes: p.notes, text: p.text, path: specToPath(p.spec), pages: estimatePages(p) })),
+    };
+  });
+
+  app.post<{ Body: { selectors?: string[] } }>("/api/plans/run", async (req) => {
+    const selectors = req.body?.selectors ?? [];
+    const plans = selectPlans(loadPlans().plans, selectors);
+    if (!plans.length) throw bad(`No plans match ${selectors.join(" ") || "(none)"}`);
+    return {
+      jobs: plans.map((p) => ({ id: p.id, jobId: startJob(p.spec, undefined, p.kind === "sweep" ? (spec, opts) => runSweep(spec, p.top, opts) : undefined) })),
+    };
   });
 
   // Wide search: scan every starting airport on one date pair, then run the
