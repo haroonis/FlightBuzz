@@ -130,3 +130,28 @@ describe("google airline filter", () => {
     expect(body[1][13][0][4]).toEqual(["FZ", "G9"]);
   });
 });
+
+describe("google itinerary splitting", () => {
+  const flight = (from: string, to: string, d: [number, number, number], dep: [number, number], arr: [number, number], arrDay = d) =>
+    ({ from_airport: { code: from, name: from }, to_airport: { code: to, name: to }, departure: { date: d, time: dep }, arrival: { date: arrDay, time: arr }, duration: 300, plane_type: "" });
+  const results = (flights: ReturnType<typeof flight>[], price: number) =>
+    Object.assign([{ type: "", price, airlines: ["flydubai"], flights, carbon: { typical_on_route: 0, emission: 0 } }], { metadata: { airlines: [], alliances: [] } });
+
+  it("keeps a connection through an airport that is also a destination (BGY → DXB → MUX)", async () => {
+    const { googleFares } = await import("../src/providers/google.ts");
+    const r = results([flight("BGY", "DXB", [2026, 12, 16], [12, 35], [22, 25]), flight("DXB", "MUX", [2026, 12, 17], [8, 0], [11, 35])], 295);
+    const fares = googleFares(r as never, { ...q, from: ["BGY"], to: ["DXB", "MUX"], returnFrom: "2027-01-01", returnTo: "2027-01-01" });
+    expect(fares[0].slices).toHaveLength(1);
+    expect(fares[0].slices[0]).toMatchObject({ from: "BGY", to: "MUX" });
+    expect(fares[0].openReturn?.date).toBe("2027-01-01");
+    const oneWay = googleFares(r as never, { ...q, from: ["BGY"], to: ["DXB", "MUX"] });
+    expect(oneWay[0].slices[0].to).toBe("MUX");
+  });
+
+  it("still splits when Google includes the way back", async () => {
+    const { googleFares } = await import("../src/providers/google.ts");
+    const r = results([flight("BGY", "DXB", [2026, 12, 16], [12, 35], [22, 25]), flight("DXB", "BGY", [2027, 1, 1], [8, 0], [12, 0])], 486);
+    const fares = googleFares(r as never, { ...q, from: ["BGY"], to: ["DXB"], returnFrom: "2027-01-01", returnTo: "2027-01-01" });
+    expect(fares[0].slices.map((s) => `${s.from}-${s.to}`)).toEqual(["BGY-DXB", "DXB-BGY"]);
+  });
+});

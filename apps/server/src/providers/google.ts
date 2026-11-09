@@ -209,6 +209,55 @@ async function searchInBrowser(q: LegQuery, ff: FF): Promise<GoogleResults> {
   });
 }
 
+/** Turn Google's results into fares. Exported for tests. */
+export function googleFares(results: GoogleResults, q: LegQuery): Fare[] {
+  const fetchedAt = new Date().toISOString();
+  const fares = new Map<string, Fare>();
+  for (const r of results) {
+    if (!r.price || !r.flights.length) continue;
+    const segments: Segment[] = r.flights.map((f, i) => ({
+      from: f.from_airport.code,
+      to: f.to_airport.code,
+      departLocal: dt(f.departure),
+      arriveLocal: dt(f.arrival),
+      durationMin: f.duration,
+      carrier: r.airlines[i] ?? r.airlines[0] ?? "",
+      carrierName: r.airlines[i] ?? r.airlines[0],
+    }));
+    // Split only when Google included the way back (the itinerary ends where it started).
+    // Otherwise a connection through an airport that is also a destination
+    // (e.g. BGY → DXB → MUX when searching to DXB and MUX) must stay whole.
+    const returnsHome = !!q.returnFrom && segments.length > 1 && q.from.includes(segments[segments.length - 1].to);
+    const turn = returnsHome ? segments.findIndex((sg) => q.to.includes(sg.to)) : -1;
+    const outSegs = turn >= 0 ? segments.slice(0, turn + 1) : segments;
+    const backSegs = turn >= 0 ? segments.slice(turn + 1) : [];
+    const slice = (segs: Segment[]) => ({
+      from: segs[0].from,
+      to: segs[segs.length - 1].to,
+      departLocal: segs[0].departLocal,
+      arriveLocal: segs[segs.length - 1].arriveLocal,
+      durationMin: sliceDuration(segs, localMinutes),
+      segments: segs,
+    });
+    const out = slice(outSegs);
+    const isReturn = !!q.returnFrom;
+    const slices = isReturn && backSegs.length ? [out, slice(backSegs)] : [out];
+    const id = `google:${isReturn ? `rt${q.returnFrom}:` : ""}${segments.map((s) => `${s.from}${s.to}${s.departLocal}`).join("|")}`;
+    if (fares.has(id) && fares.get(id)!.price <= r.price) continue;
+    fares.set(id, {
+      id,
+      provider: "google",
+      price: r.price,
+      currency: q.currency,
+      slices,
+      ...(isReturn && slices.length === 1 ? { openReturn: { date: q.returnFrom!, from: q.to, to: q.from } } : {}),
+      deepLink: googlePageUrl(q),
+      fetchedAt,
+    });
+  }
+  return [...fares.values()];
+}
+
 export const googleProvider: FlightProvider = {
   id: "google",
   name: "Google Flights",
@@ -234,47 +283,6 @@ export const googleProvider: FlightProvider = {
       googleGate.onError(e);
       throw e;
     }
-    const fetchedAt = new Date().toISOString();
-    const fares = new Map<string, Fare>();
-    for (const r of results) {
-      if (!r.price || !r.flights.length) continue;
-      const segments: Segment[] = r.flights.map((f, i) => ({
-        from: f.from_airport.code,
-        to: f.to_airport.code,
-        departLocal: dt(f.departure),
-        arriveLocal: dt(f.arrival),
-        durationMin: f.duration,
-        carrier: r.airlines[i] ?? r.airlines[0] ?? "",
-        carrierName: r.airlines[i] ?? r.airlines[0],
-      }));
-      // If Google included the way back, split where the trip reaches the destination.
-      const turn = segments.findIndex((sg) => q.to.includes(sg.to));
-      const outSegs = turn >= 0 ? segments.slice(0, turn + 1) : segments;
-      const backSegs = turn >= 0 ? segments.slice(turn + 1) : [];
-      const slice = (segs: Segment[]) => ({
-        from: segs[0].from,
-        to: segs[segs.length - 1].to,
-        departLocal: segs[0].departLocal,
-        arriveLocal: segs[segs.length - 1].arriveLocal,
-        durationMin: sliceDuration(segs, localMinutes),
-        segments: segs,
-      });
-      const out = slice(outSegs);
-      const isReturn = !!q.returnFrom;
-      const slices = isReturn && backSegs.length ? [out, slice(backSegs)] : [out];
-      const id = `google:${isReturn ? `rt${q.returnFrom}:` : ""}${segments.map((s) => `${s.from}${s.to}${s.departLocal}`).join("|")}`;
-      if (fares.has(id) && fares.get(id)!.price <= r.price) continue;
-      fares.set(id, {
-        id,
-        provider: "google",
-        price: r.price,
-        currency: q.currency,
-        slices,
-        ...(isReturn && slices.length === 1 ? { openReturn: { date: q.returnFrom!, from: q.to, to: q.from } } : {}),
-        deepLink: googlePageUrl(q),
-        fetchedAt,
-      });
-    }
-    return [...fares.values()];
+    return googleFares(results, q);
   },
 };
