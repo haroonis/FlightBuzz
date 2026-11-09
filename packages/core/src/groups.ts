@@ -33,6 +33,8 @@ export const BUILTIN_GROUPS: AirportGroup[] = [
   // Elsewhere
   { slug: "new-york", name: "New York (all)", members: ["JFK", "EWR", "LGA"] },
   { slug: "tokyo", name: "Tokyo (all)", members: ["HND", "NRT"] },
+  // Every European country (not Russia, Belarus or Ukraine): all large and medium airports with scheduled flights.
+  { slug: "europe", name: "Europe (all airports)", members: ["AL", "AT", "BA", "BE", "BG", "CH", "CY", "CZ", "DE", "DK", "EE", "ES", "FI", "FO", "FR", "GB", "GG", "GI", "GR", "HR", "HU", "IE", "IM", "IS", "IT", "JE", "LT", "LU", "LV", "MD", "ME", "MK", "MT", "NL", "NO", "PL", "PT", "RO", "RS", "SE", "SI", "SK", "XK"] },
   { slug: "europe-hubs", name: "European hubs", members: ["AMS", "FRA", "CDG", "MUC", "IST", "ZRH", "VIE"] },
   // Found with Google Flights on 8 Nov 2026: one-stop single tickets on 16 Dec to Lahore,
   // Multan or Faisalabad. A minimum list: Google shows ~10 flights per page.

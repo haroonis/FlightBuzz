@@ -21,7 +21,19 @@ db.exec(`
   );
   CREATE INDEX IF NOT EXISTS runs_saved ON runs (saved_id, at);
   CREATE TABLE IF NOT EXISTS fare_cache (key TEXT PRIMARY KEY, fetched_at INTEGER NOT NULL, fares TEXT NOT NULL);
+  CREATE TABLE IF NOT EXISTS kv (key TEXT PRIMARY KEY, value TEXT NOT NULL);
 `);
+
+// ---- small persistent settings/state ----
+
+export function kvGet<T>(key: string): T | undefined {
+  const r = db.prepare("SELECT value FROM kv WHERE key = ?").get(key) as { value: string } | undefined;
+  return r ? (JSON.parse(r.value) as T) : undefined;
+}
+
+export function kvSet(key: string, value: unknown): void {
+  db.prepare("INSERT INTO kv (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value").run(key, JSON.stringify(value));
+}
 
 // ---- groups ----
 

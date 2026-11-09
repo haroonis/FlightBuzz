@@ -48,8 +48,18 @@ export interface RouteSummary {
   journeys: number;
 }
 
+export interface SweepInfo {
+  /** Starting airports scanned on one date pair. */
+  scannedAirports: number;
+  /** Cheapest scan price per airport, cheapest first. */
+  ranking: { airport: string; price: number }[];
+  /** How many of the cheapest airports went into the full search. */
+  top: number;
+}
+
 export interface SearchResult {
   spec: SearchSpec;
+  sweep?: SweepInfo;
   trips: Trip[];
   summary: ResultSummary;
   routes: RouteSummary[];

@@ -1,5 +1,5 @@
 import { addDays, daysBetween, eachDay } from "../dates.ts";
-import { GroupRegistry, defaultRegistry, expandPlaces } from "../places.ts";
+import { GroupRegistry, defaultRegistry, expandPlaces, withNearby } from "../places.ts";
 import type { DateRange, LegQuery, ProviderCapabilities, SearchSpec, StopoverStop } from "../types.ts";
 
 /**
@@ -46,8 +46,8 @@ export function backWindow(spec: SearchSpec): DateRange | undefined {
 }
 
 export function planSearch(spec: SearchSpec, reg: GroupRegistry = defaultRegistry): SearchPlan {
-  const origins = expandPlaces(spec.origins, reg);
-  const dests = expandPlaces(spec.destinations, reg);
+  const origins = withNearby(expandPlaces(spec.origins, reg), spec.nearbyKm ?? 0);
+  const dests = withNearby(expandPlaces(spec.destinations, reg), spec.nearbyKm ?? 0);
   const legs: Record<string, LegQuery> = {};
   const routes: RouteTemplate[] = [];
   const base = { passengers: spec.passengers, cabin: spec.cabin, currency: spec.currency, ...(spec.holdBags ? { holdBags: spec.holdBags } : {}), ...(spec.airlines?.length ? { airlines: [...spec.airlines].sort() } : {}) };

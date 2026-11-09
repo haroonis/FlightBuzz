@@ -16,6 +16,7 @@ import { getJob, startJob } from "./jobs.ts";
 import { browserAvailable, browserStatus, tab } from "./browser/session.ts";
 import { providerInfo } from "./providers/index.ts";
 import { registry } from "./search.ts";
+import { runSweep } from "./sweep.ts";
 
 export async function routes(app: FastifyInstance): Promise<void> {
   // Errors as { error: "message" }.
@@ -87,6 +88,14 @@ export async function routes(app: FastifyInstance): Promise<void> {
   app.post<{ Body: { spec: SearchSpec } }>("/api/search", async (req) => {
     checkSpec(req.body?.spec);
     return { jobId: startJob(req.body.spec) };
+  });
+
+  // Wide search: scan every starting airport on one date pair, then run the
+  // full search from the `top` cheapest (default 21, three Google pages per date).
+  app.post<{ Body: { spec: SearchSpec; top?: number } }>("/api/sweep", async (req) => {
+    checkSpec(req.body?.spec);
+    const top = Math.max(1, Math.min(70, Math.round(req.body.top ?? 21)));
+    return { jobId: startJob(req.body.spec, undefined, (spec, opts) => runSweep(spec, top, opts)) };
   });
 
   app.get<{ Params: { id: string } }>("/api/jobs/:id", async (req) => {

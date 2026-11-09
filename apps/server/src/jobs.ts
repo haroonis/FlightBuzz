@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
-import type { JobStatus, SearchSpec } from "@flightbuzz/core";
+import type { JobStatus, SearchResult, SearchSpec } from "@flightbuzz/core";
+import type { FetchOptions } from "./fetcher.ts";
 import { getSaved, recordRun } from "./db.ts";
 import { runSearch } from "./search.ts";
 
@@ -20,14 +21,18 @@ export function getJob(id: string): JobStatus | undefined {
 }
 
 /** Start a search in the background and return its job id. */
-export function startJob(spec: SearchSpec, savedSearchId?: string): string {
+export function startJob(
+  spec: SearchSpec,
+  savedSearchId?: string,
+  run: (spec: SearchSpec, opts: FetchOptions) => Promise<SearchResult> = runSearch,
+): string {
   sweep();
   if (savedSearchId && runningSaved.has(savedSearchId)) return runningSaved.get(savedSearchId)!;
   const id = randomUUID();
   const job: JobStatus & { finished?: number } = { id, status: "running", progress: { done: 0, total: 0 }, savedSearchId };
   jobs.set(id, job);
   if (savedSearchId) runningSaved.set(savedSearchId, id);
-  runSearch(spec, { onProgress: (done, total) => (job.progress = { done, total }) })
+  run(spec, { onProgress: (done, total) => (job.progress = { done, total }) })
     .then((result) => {
       job.result = result;
       job.status = "done";

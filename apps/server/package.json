@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "NODE_OPTIONS=--disable-warning=ExperimentalWarning tsx watch src/index.ts",
     "start": "NODE_OPTIONS=--disable-warning=ExperimentalWarning tsx src/index.ts",
-    "refresh": "NODE_OPTIONS=--disable-warning=ExperimentalWarning tsx src/cli.ts refresh"
+    "refresh": "NODE_OPTIONS=--disable-warning=ExperimentalWarning tsx src/cli.ts refresh",
+    "sweep": "NODE_OPTIONS=--disable-warning=ExperimentalWarning tsx src/cli.ts sweep"
   },
   "dependencies": {
     "@fastify/static": "^8.0.3",

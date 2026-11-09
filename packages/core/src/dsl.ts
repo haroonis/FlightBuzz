@@ -20,6 +20,7 @@ import type { Cabin, DateRange, Direction, SearchSpec, StopoverStop } from "./ty
  *   cur GBP            currency; providers google,kiwi
  *   returnonly         single return tickets only
  *   airlines FZ,G9,W6  only these airlines
+ *   nearby 100km       also use airports within 100 km of the chosen ones
  */
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
@@ -142,6 +143,10 @@ export function parseDsl(text: string): DslResult {
       const c = next();
       if (!c || !/^[a-z]{3}$/i.test(c)) return fail("cur needs a currency code");
       spec.currency = c.toUpperCase();
+    } else if (t === "nearby") {
+      const m = (next() ?? "").match(/^(\d+)(km)?$/i);
+      if (!m) return fail("nearby needs a distance, e.g. 100km");
+      if (+m[1]) spec.nearbyKm = +m[1];
     } else if (t === "airlines") {
       spec.airlines = (next() ?? "").split(",").map((a) => a.toUpperCase()).filter(Boolean);
     } else if (t === "returnonly") {
@@ -190,5 +195,6 @@ export function formatDsl(spec: SearchSpec): string {
   if (spec.providers.length) parts.push(`providers ${spec.providers.join(",")}`);
   if (spec.returnTicketsOnly) parts.push("returnonly");
   if (spec.airlines?.length) parts.push(`airlines ${spec.airlines.join(",")}`);
+  if (spec.nearbyKm) parts.push(`nearby ${spec.nearbyKm}km`);
   return parts.join(" ");
 }

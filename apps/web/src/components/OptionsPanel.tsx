@@ -78,6 +78,17 @@ export function OptionsPanel({ spec, onChange }: Props) {
         </label>
 
         <label className="field">
+          <span className="field-label">Nearby airports</span>
+          <select value={spec.nearbyKm ?? 0} onChange={(e) => onChange({ nearbyKm: Number(e.target.value) || undefined })}>
+            <option value={0}>Only the airports chosen</option>
+            <option value={50}>Add airports within 50 km</option>
+            <option value={100}>Add airports within 100 km</option>
+            <option value={150}>Add airports within 150 km</option>
+          </select>
+          <span className="small muted">E.g. 100 km: Malpensa adds Bergamo and Linate; Fiumicino adds Ciampino.</span>
+        </label>
+
+        <label className="field">
           <span className="field-label">Only these airlines</span>
           <input
             type="text"

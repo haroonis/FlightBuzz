@@ -45,3 +45,17 @@ describe("shared pacing", () => {
     for (let i = 1; i < starts.length; i++) expect(starts[i] - ends[i - 1]).toBeGreaterThanOrEqual(145);
   });
 });
+
+describe("sweep", () => {
+  it("scans every origin, then searches the cheapest few in full", async () => {
+    process.env.PROVIDERS = "demo";
+    const { runSweep } = await import("../src/sweep.ts");
+    const spec = { ...defaultSpec(), origins: ["MAN", "LPL", "LBA", "BHX", "LHR"], destinations: ["IST"], depart: { from: "2026-12-16", to: "2026-12-18" }, return: { type: "oneway" as const }, providers: ["demo"] };
+    const r = await runSweep(spec, 2);
+    expect(r.sweep!.scannedAirports).toBe(5);
+    expect(r.sweep!.ranking.length).toBeGreaterThan(1);
+    const top2 = r.sweep!.ranking.slice(0, 2).map((x) => x.airport);
+    expect(new Set(r.trips.map((t) => t.out.from))).toEqual(new Set(top2));
+    expect(r.spec.origins.sort()).toEqual([...top2].sort());
+  });
+});

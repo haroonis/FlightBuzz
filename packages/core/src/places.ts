@@ -1,4 +1,4 @@
-import { AIRPORTS, COUNTRIES, REGIONS, airport, airportsInCountry, airportsInRegion } from "./data.ts";
+import { AIRPORTS, COUNTRIES, REGIONS, airport, airportsInCountry, airportsInRegion, haversineKm } from "./data.ts";
 import { BUILTIN_GROUPS } from "./groups.ts";
 import type { AirportGroup } from "./types.ts";
 
@@ -93,6 +93,21 @@ export function expandPlaces(tokens: string[], reg: GroupRegistry = defaultRegis
         break;
       }
     }
+  }
+  return [...out].sort();
+}
+
+/**
+ * Add every airport within `km` of any airport in the list (large and medium
+ * airports with scheduled flights). Sorted, without duplicates.
+ */
+export function withNearby(codes: string[], km: number): string[] {
+  if (!km || km <= 0) return codes;
+  const out = new Set(codes);
+  const base = codes.map((c) => airport(c)).filter((a): a is NonNullable<typeof a> => !!a);
+  for (const a of AIRPORTS) {
+    if (a.size === "S" || out.has(a.iata)) continue;
+    if (base.some((b) => haversineKm(a, b) <= km)) out.add(a.iata);
   }
   return [...out].sort();
 }

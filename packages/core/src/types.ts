@@ -66,6 +66,8 @@ export interface SearchSpec {
   returnTicketsOnly?: boolean;
   /** Only these airlines (IATA codes, e.g. ["FZ", "G9", "W6"]). Empty or missing = any. */
   airlines?: string[];
+  /** Also use every airport within this many km of a chosen airport, on both sides (e.g. 100: Malpensa adds Bergamo and Linate). */
+  nearbyKm?: number;
   currency: string;
   /** Provider ids to query; empty = all enabled. */
   providers: string[];

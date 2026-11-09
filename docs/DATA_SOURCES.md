@@ -44,10 +44,10 @@ By default, prices assume **no checked bags**. Set "Checked bags per person" (`b
 
 ## How Google is fetched politely
 
-- **One request at a time.** After each request it waits 15–26 s, randomised (`GOOGLE_MIN_DELAY_MS=14700` plus up to 75% jitter). That is at most about 150 requests an hour. History: about 60 browser-window pages in a row at 45–80 s, 41 at 36–63 s, 22 at 29–50 s 28 at 23–40 s and more at 18–32 s all loaded with no blocks, so the pause was cut by 20% five times. In a live test from a cloud server, Google returned HTTP 429 after about 10 requests spaced 10–30 s apart, so the old 8–14 s gap was too fast. Home broadband IPs are usually treated more generously than cloud IPs.
+- **One request at a time.** After each request it waits 23–40 s, randomised (`GOOGLE_MIN_DELAY_MS=23000` plus up to 75% jitter), at most about 110 requests an hour. History from a cloud server: direct requests (no browser) got HTTP 429 after about 10 requests 10–30 s apart. Through the browser window the pause was cut step by step from 45–80 s to 15–26 s with no blocks, until Google showed a robot check after a full day of about 150 pages. So the default is back to 23–40 s with a daily cap of 150. Home broadband IPs are usually treated more generously than cloud IPs.
 - **No automatic retries.**
 - **Pause on any sign of blocking.** A `429`, `403` or `503`, or a CAPTCHA, stops all Google requests for 3 hours (`GOOGLE_COOLDOWN_MINUTES`). Searches carry on with cached prices, and the app shows the pause.
-- **Daily cap.** At most `GOOGLE_DAILY_LIMIT` requests a day (default 300).
+- **Daily cap.** At most `GOOGLE_DAILY_LIMIT` requests a day (default 150). The count and any pause are saved in the database, so restarting the app doesn't reset them.
 - **Shared cache.** Answers are reused for 5 hours (`CACHE_TTL_MINUTES`), so overlapping saved searches don't ask twice.
 
 ### What this means for search size

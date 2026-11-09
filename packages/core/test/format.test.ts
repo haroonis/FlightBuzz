@@ -71,3 +71,21 @@ describe("checked bags", () => {
     expect(validateSpec({ ...al, airlines: ["FLYDUBAI"] }).map((p) => p.field)).toContain("airlines");
   });
 });
+
+describe("nearby airports and Europe", () => {
+  it("adds airports near the chosen ones", async () => {
+    const { withNearby } = await import("../src/index.ts");
+    expect(withNearby(["MXP"], 100)).toEqual(expect.arrayContaining(["MXP", "BGY", "LIN"]));
+    expect(withNearby(["MXP"], 0)).toEqual(["MXP"]);
+    const s = pathToSpec("/search/MXP/MUX/2026-12-16/no-return?nearby=60").spec!;
+    expect(s.nearbyKm).toBe(60);
+    expect(specToPath(s)).toContain("nearby=60");
+    expect(parseDsl(formatDsl(s)).spec!.nearbyKm).toBe(60);
+  });
+  it("Europe group covers every European airport with scheduled flights", () => {
+    const eu = expandPlaces(["@europe"]);
+    expect(eu.length).toBeGreaterThan(400);
+    expect(eu).toEqual(expect.arrayContaining(["BGY", "NAP", "MAN", "ATH", "KEF", "TIA"]));
+    expect(eu).not.toContain("SVO");
+  });
+});

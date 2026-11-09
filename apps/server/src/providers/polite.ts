@@ -1,6 +1,16 @@
+import { kvGet, kvSet } from "../db.ts";
+
+interface GateState {
+  blockedUntil: number;
+  blockReason: string;
+  day: string;
+  used: number;
+}
+
 /**
  * Shared "polite scraper" rules for unofficial sources: a daily request cap
  * and a long pause as soon as the site shows any sign of blocking us.
+ * The count and any pause are saved, so restarting the app doesn't reset them.
  */
 export class PoliteGate {
   private blockedUntil = 0;
@@ -11,7 +21,14 @@ export class PoliteGate {
   constructor(
     private name: string,
     private opts: () => { cooldownMinutes: number; dailyLimit: number },
-  ) {}
+  ) {
+    const saved = kvGet<GateState>(`gate:${name}`);
+    if (saved) Object.assign(this, saved);
+  }
+
+  private save(): void {
+    kvSet(`gate:${this.name}`, { blockedUntil: this.blockedUntil, blockReason: this.blockReason, day: this.day, used: this.used } satisfies GateState);
+  }
 
   /** Reason to skip requests right now, if any. */
   unavailable(): string | undefined {
@@ -29,6 +46,7 @@ export class PoliteGate {
       this.used = 0;
     }
     this.used++;
+    this.save();
   }
 
   /** Call with any request error; starts the cooldown if it looks like a block. */
@@ -42,6 +60,7 @@ export class PoliteGate {
     const { cooldownMinutes } = this.opts();
     this.blockedUntil = Date.now() + cooldownMinutes * 60_000;
     this.blockReason = err?.name === "CaptchaError" ? "a CAPTCHA" : err?.status ? `HTTP ${err.status}` : "a block";
+    this.save();
     console.warn(`[${this.name}] ${this.blockReason}; pausing requests for ${cooldownMinutes} min`);
   }
 

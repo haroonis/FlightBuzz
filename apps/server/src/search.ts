@@ -41,7 +41,7 @@ export function summarize(trips: Trip[], currency: string): ResultSummary {
   };
 }
 
-export async function runSearch(spec: SearchSpec, opts: FetchOptions = {}): Promise<SearchResult> {
+export async function runSearch(spec: SearchSpec, opts: FetchOptions & { tripLimit?: number } = {}): Promise<SearchResult> {
   const started = Date.now();
   const reg = registry();
   const problems = validateSpec(spec, reg);
@@ -51,7 +51,7 @@ export async function runSearch(spec: SearchSpec, opts: FetchOptions = {}): Prom
   if (!providers.length) throw new Error("No flight data providers are enabled. See docs/DATA_SOURCES.md.");
   const { faresByLeg, stats } = await fetchPlan(plan, providers, opts);
   const counts: Record<string, number> = {};
-  const trips = buildTrips(spec, plan, faresByLeg, { onRoute: (id, n) => (counts[id] = n) });
+  const trips = buildTrips(spec, plan, faresByLeg, { onRoute: (id, n) => (counts[id] = n), ...(opts.tripLimit ? { tripLimit: opts.tripLimit } : {}) });
   const routes = plan.routes.map((r) => ({ id: r.id, direction: r.direction, label: r.label, journeys: counts[r.id] ?? 0 }));
   return {
     spec,

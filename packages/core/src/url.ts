@@ -14,6 +14,7 @@ import type { Cabin, DateRange, Direction, SearchSpec, StopoverPlan } from "./ty
  *   stops, layover (hours), selftransfer (minutes), ground (0|hours), adults,
  *   children, infants, bags (checked bags per person), cabin, cur, providers,
  *   returnonly (1 = single return tickets only), airlines (e.g. FZ,G9,W6),
+ *   nearby (km: also use airports this close to the chosen ones),
  *   via (repeatable)
  *   via = [out.|back.]{places}:{min}[-{max}][~{places}:{min}[-{max}]...]
  */
@@ -77,6 +78,7 @@ export function specToPath(spec: SearchSpec): string {
   if (spec.providers.length) add("providers", spec.providers.join(","));
   if (spec.returnTicketsOnly) add("returnonly", 1);
   if (spec.airlines?.length) add("airlines", spec.airlines.join(","));
+  if (spec.nearbyKm) add("nearby", spec.nearbyKm);
   for (const plan of spec.stopovers) add("via", formatVia(plan));
   return q.length ? `${path}?${q.join("&")}` : path;
 }
@@ -134,6 +136,7 @@ export function pathToSpec(input: string): ParseResult {
   const cur = params.get("cur");
   if (cur) spec.currency = cur.toUpperCase();
   if (params.get("returnonly") === "1") spec.returnTicketsOnly = true;
+  if (num("nearby")) spec.nearbyKm = num("nearby");
   const airlines = params.get("airlines");
   if (airlines) spec.airlines = airlines.split(",").map((a) => a.trim().toUpperCase()).filter(Boolean);
   const providers = params.get("providers");
@@ -143,7 +146,7 @@ export function pathToSpec(input: string): ParseResult {
     if (!plan) return { error: `Bad via "${v}"` };
     spec.stopovers.push(plan);
   }
-  for (const k of ["stops", "layover", "selftransfer", "ground", "adults", "children", "infants", "bags"]) {
+  for (const k of ["stops", "layover", "selftransfer", "ground", "adults", "children", "infants", "bags", "nearby"]) {
     if (params.has(k) && !Number.isFinite(Number(params.get(k)))) return { error: `"${k}" must be a number` };
   }
   return { spec };

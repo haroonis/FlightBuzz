@@ -42,7 +42,7 @@ Optional extras, off unless you tick them for a search or add them to `PROVIDERS
 
 Kayak appears as "check this price" links only.
 
-Everything is fetched slowly on purpose: one request at a time, 24–63 s apart (Google 15–26 s), with a 3-hour pause if a site pushes back. A big search therefore takes minutes rather than seconds, which suits the twice-daily refresh. See [docs/DATA_SOURCES.md](docs/DATA_SOURCES.md) for details and [.env.example](.env.example) for settings. To try the app without touching any real site, run `PROVIDERS=demo npm start`.
+Everything is fetched slowly on purpose: one request at a time, 24–63 s apart (Google 23–40 s), with a 3-hour pause if a site pushes back. A big search therefore takes minutes rather than seconds, which suits the twice-daily refresh. See [docs/DATA_SOURCES.md](docs/DATA_SOURCES.md) for details and [.env.example](.env.example) for settings. To try the app without touching any real site, run `PROVIDERS=demo npm start`.
 
 ## Search URLs
 
@@ -66,6 +66,18 @@ Everything is fetched slowly on purpose: one request at a time, 24–63 s apart 
 | `via` | stopover plan, repeatable: `[out.\|back.]PLACES:MIN[-MAX][~PLACES:N…]`. Nights `0` means a self-transfer connection only. |
 | `bags` | checked bags per person to include in prices, 0–2 (default 0) |
 | `adults` `children` `infants` `cabin` `cur` `providers` | as named |
+
+## Wide searches: every airport in a region
+
+- **`@europe`** is every European airport with scheduled flights (about 460).
+- **Nearby airports** (`nearby=100`, or `nearby 100km` in text) adds every airport within that distance of a chosen one, on both sides. For example, Malpensa adds Bergamo and Linate.
+- **Sweep** keeps a wide search affordable. It scans every starting airport on one date pair (return tickets only), ranks them, then runs the full search (all dates and options) from the cheapest N:
+
+```bash
+npm run sweep -w @flightbuzz/server -- "@europe > MUX,LHE,LYP 2026-12-16..2026-12-17 back 2026-12-31..2027-01-03 stops 2" 21
+```
+
+The same is available as `POST /api/sweep {"spec": …, "top": 21}`. Connections can be anywhere in the world; only the stop limit applies.
 
 ## Text search
 
