@@ -44,7 +44,7 @@ By default, prices assume **no checked bags**. Set "Checked bags per person" (`b
 
 ## How Google is fetched politely
 
-- **One request at a time.** After each request it waits 29–50 s, randomised (`GOOGLE_MIN_DELAY_MS=28800` plus up to 75% jitter). That is at most about 90 requests an hour. History: about 60 browser-window pages in a row at 45–80 s, then 41 more at 36–63 s, all loaded with no blocks, so the pause was cut by 20% twice. In a live test from a cloud server, Google returned HTTP 429 after about 10 requests spaced 10–30 s apart, so the old 8–14 s gap was too fast. Home broadband IPs are usually treated more generously than cloud IPs.
+- **One request at a time.** After each request it waits 23–40 s, randomised (`GOOGLE_MIN_DELAY_MS=23000` plus up to 75% jitter). That is at most about 110 requests an hour. History: about 60 browser-window pages in a row at 45–80 s, 41 at 36–63 s and 22 at 29–50 s all loaded with no blocks, so the pause was cut by 20% three times. In a live test from a cloud server, Google returned HTTP 429 after about 10 requests spaced 10–30 s apart, so the old 8–14 s gap was too fast. Home broadband IPs are usually treated more generously than cloud IPs.
 - **No automatic retries.**
 - **Pause on any sign of blocking.** A `429`, `403` or `503`, or a CAPTCHA, stops all Google requests for 3 hours (`GOOGLE_COOLDOWN_MINUTES`). Searches carry on with cached prices, and the app shows the pause.
 - **Daily cap.** At most `GOOGLE_DAILY_LIMIT` requests a day (default 300).

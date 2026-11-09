@@ -42,7 +42,7 @@ Optional extras, off unless you tick them for a search or add them to `PROVIDERS
 
 Kayak appears as "check this price" links only.
 
-Everything is fetched slowly on purpose: one request at a time, 24–63 s apart (Google 29–50 s), with a 3-hour pause if a site pushes back. A big search therefore takes minutes rather than seconds, which suits the twice-daily refresh. See [docs/DATA_SOURCES.md](docs/DATA_SOURCES.md) for details and [.env.example](.env.example) for settings. To try the app without touching any real site, run `PROVIDERS=demo npm start`.
+Everything is fetched slowly on purpose: one request at a time, 24–63 s apart (Google 23–40 s), with a 3-hour pause if a site pushes back. A big search therefore takes minutes rather than seconds, which suits the twice-daily refresh. See [docs/DATA_SOURCES.md](docs/DATA_SOURCES.md) for details and [.env.example](.env.example) for settings. To try the app without touching any real site, run `PROVIDERS=demo npm start`.
 
 ## Search URLs
 
