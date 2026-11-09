@@ -60,6 +60,7 @@ export function validateSpec(spec: SearchSpec, reg: GroupRegistry = defaultRegis
   }
   if (spec.passengers.adults < 1) p.push({ field: "passengers", message: "At least one adult" });
   if ((spec.holdBags ?? 0) < 0 || (spec.holdBags ?? 0) > 2) p.push({ field: "holdBags", message: "Checked bags must be 0–2 per person" });
+  for (const a of spec.airlines ?? []) if (!/^[A-Z0-9]{2}$/.test(a)) p.push({ field: "airlines", message: `Airline codes are 2 characters, e.g. FZ (got "${a}")` });
   if (spec.maxStops < 0 || spec.maxStops > 5) p.push({ field: "maxStops", message: "Stops must be 0–5" });
   spec.stopovers.forEach((plan, i) => {
     if (!plan.stops.length) p.push({ field: `stopovers.${i}`, message: "Stopover plan has no stops" });

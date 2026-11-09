@@ -64,6 +64,8 @@ export interface SearchSpec {
   stopovers: StopoverPlan[];
   /** Only price single return tickets (no one-way or separate-ticket combinations). */
   returnTicketsOnly?: boolean;
+  /** Only these airlines (IATA codes, e.g. ["FZ", "G9", "W6"]). Empty or missing = any. */
+  airlines?: string[];
   currency: string;
   /** Provider ids to query; empty = all enabled. */
   providers: string[];
@@ -219,6 +221,8 @@ export interface LegQuery {
   cabin: Cabin;
   /** Checked bags per adult/child (omitted when 0). */
   holdBags?: number;
+  /** Only these airlines (omitted when any). */
+  airlines?: string[];
   currency: string;
 }
 

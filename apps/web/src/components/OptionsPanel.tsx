@@ -77,6 +77,20 @@ export function OptionsPanel({ spec, onChange }: Props) {
           <span className="small muted">Included in Kiwi prices. Google shows base fares.</span>
         </label>
 
+        <label className="field">
+          <span className="field-label">Only these airlines</span>
+          <input
+            type="text"
+            placeholder="Any airline, or e.g. FZ, G9, W6"
+            defaultValue={(spec.airlines ?? []).join(", ")}
+            onBlur={(e) => {
+              const codes = e.target.value.split(/[\s,]+/).map((a) => a.trim().toUpperCase()).filter(Boolean);
+              onChange({ airlines: codes.length ? codes : undefined });
+            }}
+          />
+          <span className="small muted">IATA codes: flydubai FZ, Air Arabia G9/3L, Fly Jinnah 9P, Wizz Air W6/W4/W9.</span>
+        </label>
+
         {spec.return.type !== "oneway" && (
           <label className="check field">
             <input

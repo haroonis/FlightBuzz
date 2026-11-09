@@ -118,3 +118,15 @@ describe("skyscanner", () => {
     expect(skyscannerItineraries({ nothing: true })).toEqual([]);
   });
 });
+
+describe("google airline filter", () => {
+  it("encodes airlines like fast-flights-ts and in the request body", async () => {
+    const { googleTfs, googleRpcBody } = await import("../src/providers/google.ts");
+    const ff = await import("fast-flights-ts");
+    const one = { ...q, from: ["MAN"], to: ["LHE"], maxStops: 1, airlines: ["FZ", "G9"] };
+    const ref = ff.createQuery({ flights: [{ date: "2026-12-01", from_airport: "MAN", to_airport: "LHE", max_stops: 1, airlines: ["FZ", "G9"] }], trip: "one-way", seat: "economy", passengers: new ff.Passengers({ adults: 1 }) });
+    expect(googleTfs(one)).toBe(ref.toStr());
+    const body = JSON.parse(JSON.parse(decodeURIComponent(googleRpcBody(one).slice(6)))[1]);
+    expect(body[1][13][0][4]).toEqual(["FZ", "G9"]);
+  });
+});

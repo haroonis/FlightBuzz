@@ -63,7 +63,7 @@ export function googleRpcBody(q: LegQuery): string {
     [to.map((a) => [a, 0])],
     null,
     stops,
-    null,
+    q.airlines?.length ? q.airlines : null,
     null,
     date,
     null, null, null, null, null, null, null,
@@ -100,6 +100,7 @@ export function googleTfs(q: LegQuery): string {
   const flight = (from: string[], to: string[], date: string) => [
     ...stringField(2, date),
     ...(q.maxStops <= 2 ? varintField(5, q.maxStops) : []),
+    ...(q.airlines ?? []).flatMap((a) => stringField(6, a)),
     ...from.flatMap((a) => bytesField(13, stringField(2, a))),
     ...to.flatMap((a) => bytesField(14, stringField(2, a))),
   ];

@@ -32,7 +32,8 @@ export function legKey(q: LegQuery): string {
   const ret = q.returnFrom ? `|ret:${q.returnFrom}..${q.returnTo}${nights}` : "";
   const pax = `${q.passengers.adults}.${q.passengers.children}.${q.passengers.infants}`;
   const bags = q.holdBags ? `|bags${q.holdBags}` : "";
-  return `${q.from.join(",")}>${q.to.join(",")}|${q.departFrom}..${q.departTo}${ret}|s${q.maxStops}|${q.cabin}|${pax}${bags}|${q.currency}`;
+  const airlines = q.airlines?.length ? `|al:${q.airlines.join(",")}` : "";
+  return `${q.from.join(",")}>${q.to.join(",")}|${q.departFrom}..${q.departTo}${ret}|s${q.maxStops}|${q.cabin}|${pax}${bags}${airlines}|${q.currency}`;
 }
 
 /** Departure window for the return direction. */
@@ -49,7 +50,7 @@ export function planSearch(spec: SearchSpec, reg: GroupRegistry = defaultRegistr
   const dests = expandPlaces(spec.destinations, reg);
   const legs: Record<string, LegQuery> = {};
   const routes: RouteTemplate[] = [];
-  const base = { passengers: spec.passengers, cabin: spec.cabin, currency: spec.currency, ...(spec.holdBags ? { holdBags: spec.holdBags } : {}) };
+  const base = { passengers: spec.passengers, cabin: spec.cabin, currency: spec.currency, ...(spec.holdBags ? { holdBags: spec.holdBags } : {}), ...(spec.airlines?.length ? { airlines: [...spec.airlines].sort() } : {}) };
 
   const addLeg = (from: string[], to: string[], window: DateRange, maxStops: number) => {
     const q: LegQuery = { from, to, departFrom: window.from, departTo: window.to, maxStops, ...base };

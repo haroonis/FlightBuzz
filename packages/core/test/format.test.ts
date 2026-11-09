@@ -64,5 +64,10 @@ describe("checked bags", () => {
     expect(rt.returnTicketsOnly).toBe(true);
     expect(specToPath(rt)).toContain("returnonly=1");
     expect(parseDsl(formatDsl(rt)).spec!.returnTicketsOnly).toBe(true);
+    const al = pathToSpec("/search/MAN/LHE/2026-12-16/no-return?airlines=fz,G9,W6").spec!;
+    expect(al.airlines).toEqual(["FZ", "G9", "W6"]);
+    expect(specToPath(al)).toContain("airlines=FZ,G9,W6");
+    expect(parseDsl(formatDsl(al)).spec!.airlines).toEqual(["FZ", "G9", "W6"]);
+    expect(validateSpec({ ...al, airlines: ["FLYDUBAI"] }).map((p) => p.field)).toContain("airlines");
   });
 });
