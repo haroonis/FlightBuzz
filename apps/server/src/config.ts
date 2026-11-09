@@ -24,10 +24,10 @@ export const config = {
   /** How long a fetched answer is reused. Keep below the schedule gap so each run refreshes. */
   cacheTtlMinutes: num(env.CACHE_TTL_MINUTES, 300),
   /**
-   * Pause between Google requests (plus up to 75% jitter): 18–32 s, ~130 requests/hour at most.
+   * Pause between Google requests (plus up to 75% jitter): 15–26 s, ~150 requests/hour at most.
    * A live test from a cloud server hit HTTP 429 after ~10 requests 10–30 s apart.
    */
-  googleMinDelayMs: num(env.GOOGLE_MIN_DELAY_MS, 18400),
+  googleMinDelayMs: num(env.GOOGLE_MIN_DELAY_MS, 14700),
   googleConcurrency: num(env.GOOGLE_CONCURRENCY, 1),
   /** Hard cap on Google requests per day. */
   googleDailyLimit: num(env.GOOGLE_DAILY_LIMIT, 300),

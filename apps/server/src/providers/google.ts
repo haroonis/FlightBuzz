@@ -14,7 +14,7 @@ import { sliceDuration, type FlightProvider } from "./types.ts";
  * The open-source `fast-flights-ts` package reads Google's answer.
  * Unofficial: it can break when Google changes things, and heavy use gets
  * rate-limited. To stay well clear of that:
- *   - one request at a time, with an 18–32 s pause after each (GOOGLE_MIN_DELAY_MS)
+ *   - one request at a time, with a 15–26 s pause after each (GOOGLE_MIN_DELAY_MS)
  *   - no automatic retries
  *   - on any sign of blocking (429, 403, 503, CAPTCHA) all Google requests stop
  *     for GOOGLE_COOLDOWN_MINUTES (default 3 h); cached prices are still used
@@ -220,7 +220,7 @@ export const googleProvider: FlightProvider = {
     return config.googleMinDelayMs;
   },
   configured: async () => !!(await load()),
-  note: "Free, unofficial. Prices are Google's base fares (full-service airlines usually include a bag; budget ones don't). One request per date covering up to 7 airports each side, sent slowly (18–32 s apart) with an automatic pause if Google pushes back.",
+  note: "Free, unofficial. Prices are Google's base fares (full-service airlines usually include a bag; budget ones don't). One request per date covering up to 7 airports each side, sent slowly (15–26 s apart) with an automatic pause if Google pushes back.",
   unavailable: () => googleGate.unavailable(),
   onRequest: () => googleGate.onRequest(),
   async search(q: LegQuery, ctx): Promise<Fare[]> {
