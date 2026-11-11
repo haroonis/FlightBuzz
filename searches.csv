@@ -30,3 +30,8 @@ pos-italy-back,yes,positioning,search,NAP FCO CIA BRI BGY MXP,MAN LPL LBA BHX LH
 pos-istanbul-out,no,positioning,search,MAN LPL LBA BHX LHR LGW STN LTN EDI GLA NCL BRS EMA,IST SAW,2026-12-14..2026-12-15,oneway,1,,,,,no,0,1,,no,Not worth it at Christmas (£111-190 each way); kept for reference
 pos-istanbul-back,no,positioning,search,IST SAW,MAN LPL LBA BHX LHR LGW STN LTN EDI GLA NCL BRS EMA,2027-01-01..2027-01-03,oneway,1,,,,,no,0,1,,no,
 fz-times-naples,yes,checks,search,MUX SKT,NAP BGY,2026-12-31..2027-01-01,oneway,1,,,FZ,,no,0,1,,no,When flydubai lands back in Italy (times for the connection home)
+pos-milan-out,yes,positioning-nap-bgy,search,MAN LPL LBA BHX LHR LGW STN LTN EDI GLA NCL BRS EMA,BGY MXP LIN,2026-12-15..2026-12-16,oneway,0,,,,,no,0,1,,no,UK to Milan (Bergamo/Malpensa/Linate) night of 15 Dec or 16 Dec for flydubai BGY 16 Dec 12:35
+pos-naples-out,yes,positioning-nap-bgy,search,MAN LPL LBA BHX LHR LGW STN LTN EDI GLA NCL BRS EMA,NAP,2026-12-15..2026-12-16,oneway,0,,,,,no,0,1,,no,UK to Naples night of 15 Dec or 16 Dec for flydubai NAP 16/17 Dec 12:15
+pos-milan-back,yes,positioning-nap-bgy,search,BGY MXP LIN,MAN LPL LBA BHX LHR LGW STN LTN EDI GLA NCL BRS EMA,2027-01-01..2027-01-03,oneway,0,,,,,no,0,1,,no,Milan to UK 1-3 Jan (flydubai lands BGY 1 Jan 11:35 or 22:00)
+pos-naples-back,yes,positioning-nap-bgy,search,NAP FCO CIA,MAN LPL LBA BHX LHR LGW STN LTN EDI GLA NCL BRS EMA,2027-01-01..2027-01-03,oneway,0,,,,,no,0,1,,no,Naples or Rome to UK 1-3 Jan (flydubai lands NAP 1 Jan 11:15)
+fz-times-bgy,yes,checks,search,LYP MUX,BGY,2026-12-31..2026-12-31,oneway,1,,,FZ,,no,0,1,,no,flydubai Faisalabad/Multan to Bergamo times on 31 Dec
