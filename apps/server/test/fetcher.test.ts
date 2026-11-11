@@ -88,3 +88,23 @@ describe("window lanes", () => {
     expect(Date.now() - t0).toBeLessThan(9 * 300 * 0.85);
   });
 });
+
+describe("paused provider", () => {
+  it("skips remaining pages straight away instead of waiting for the pace", async () => {
+    const { fetchPlan } = await import("../src/fetcher.ts");
+    let calls = 0;
+    const provider = {
+      id: "paused-lanes", name: "Paused", note: "", concurrency: 3, minDelayMs: 0, startIntervalMs: 2000,
+      capabilities: { multiAirport: true, dateRange: false, returnFares: false },
+      configured: () => true,
+      unavailable: () => (calls >= 1 ? "paused" : undefined),
+      async search() { calls++; return []; },
+    };
+    const spec = { ...defaultSpec(), origins: ["MAN"], destinations: ["KWI"], depart: { from: "2026-12-01", to: "2026-12-10" }, return: { type: "oneway" as const } };
+    const t0 = Date.now();
+    const { stats } = await fetchPlan(planSearch(spec), [provider]);
+    expect(calls).toBe(1);
+    expect(stats.skippedRequests).toBe(9);
+    expect(Date.now() - t0).toBeLessThan(1500);
+  });
+});

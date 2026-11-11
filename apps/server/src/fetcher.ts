@@ -172,6 +172,13 @@ export async function fetchPlan(plan: SearchPlan, providers: FlightProvider[], o
         list,
         provider.concurrency,
         async (t) => {
+          // Don't queue behind the pacing at all if the provider is paused or out of budget.
+          const pausedReason = provider.unavailable?.();
+          if (pausedReason && !cacheGet(t.cacheKey, config.cacheTtlMinutes)) {
+            skip(provider, pausedReason);
+            tick();
+            return;
+          }
           try {
             const fares = await paced(provider, async () => {
               // Another search may have fetched this meanwhile, or the provider may have paused.
