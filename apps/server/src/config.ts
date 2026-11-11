@@ -24,11 +24,16 @@ export const config = {
   /** How long a fetched answer is reused. Keep below the schedule gap so each run refreshes. */
   cacheTtlMinutes: num(env.CACHE_TTL_MINUTES, 300),
   /**
-   * Pause between Google requests (plus up to 75% jitter): 23–40 s, ~110 requests/hour at most.
-   * At 15–26 s, Google showed a robot check after a full day (~150 pages) of searching.
-   * A live test from a cloud server hit HTTP 429 after ~10 requests 10–30 s apart.
+   * Google pacing in the browser window(s): each window starts a page about every
+   * GOOGLE_START_INTERVAL_MS (start to start) and rests at least this long after a page.
+   * History from a cloud server: direct requests got HTTP 429 after ~10 requests 10–30 s
+   * apart; one window at ~45 s start-to-start got a robot check after 33–150 pages.
    */
-  googleMinDelayMs: num(env.GOOGLE_MIN_DELAY_MS, 23000),
+  googleMinDelayMs: num(env.GOOGLE_MIN_DELAY_MS, 5000),
+  /** Each browser window starts a Google page about this often (start to start, ±15%). */
+  googleStartIntervalMs: num(env.GOOGLE_START_INTERVAL_MS, 60000),
+  /** Browser windows searching Google at the same time (staggered). */
+  googleWindows: num(env.GOOGLE_WINDOWS, 3),
   googleConcurrency: num(env.GOOGLE_CONCURRENCY, 1),
   /** Hard cap on Google requests per day. */
   googleDailyLimit: num(env.GOOGLE_DAILY_LIMIT, 150),

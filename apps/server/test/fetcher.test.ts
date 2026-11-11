@@ -59,3 +59,32 @@ describe("sweep", () => {
     expect(r.spec.origins.sort()).toEqual([...top2].sort());
   });
 });
+
+describe("window lanes", () => {
+  it("runs up to 3 at once, each window ~interval start-to-start, starts spread out", async () => {
+    const { fetchPlan } = await import("../src/fetcher.ts");
+    const starts: number[] = [];
+    let running = 0;
+    let maxRunning = 0;
+    const provider = {
+      id: "lanes", name: "Lanes", note: "", concurrency: 3, minDelayMs: 10, startIntervalMs: 300,
+      capabilities: { multiAirport: true, dateRange: false, returnFares: false },
+      configured: () => true,
+      async search() {
+        starts.push(Date.now());
+        maxRunning = Math.max(maxRunning, ++running);
+        await new Promise((r) => setTimeout(r, 60));
+        running--;
+        return [];
+      },
+    };
+    const spec = { ...defaultSpec(), origins: ["MAN"], destinations: ["DXB"], depart: { from: "2026-12-01", to: "2026-12-09" }, return: { type: "oneway" as const } };
+    const t0 = Date.now();
+    await fetchPlan(planSearch(spec), [provider]);
+    expect(starts).toHaveLength(9);
+    expect(maxRunning).toBeLessThanOrEqual(3);
+    for (let i = 1; i < starts.length; i++) expect(starts[i] - starts[i - 1]).toBeGreaterThanOrEqual(75); // ~0.8 × 300/3
+    // 9 pages over 3 windows at ~300 ms start-to-start ≈ 3 rounds, not 9.
+    expect(Date.now() - t0).toBeLessThan(9 * 300 * 0.85);
+  });
+});

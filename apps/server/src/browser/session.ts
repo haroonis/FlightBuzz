@@ -16,8 +16,8 @@ type Page = import("playwright").Page;
 let pw: PW | null | undefined;
 let context: Context | null = null;
 let launching: Promise<Context> | null = null;
-const tabs = new Map<string, Page>();
-const queues = new Map<string, Promise<unknown>>();
+/** Per site: its windows, which are busy, and who is waiting for one. */
+const pools = new Map<string, { pages: Page[]; busy: Set<Page>; waiting: (() => void)[]; opening: number }>();
 
 /** What the browser is waiting on, shown in the app. */
 export const browserStatus: { waitingForHuman: string | null; mode: string; error: string | null } = {
@@ -63,7 +63,7 @@ async function launch(): Promise<Context> {
   }
   context.on("close", () => {
     context = null;
-    tabs.clear();
+    pools.clear();
   });
   console.log(`[browser] window open, profile ${config.browserProfileDir}`);
   return context;
@@ -75,23 +75,55 @@ async function getContext(): Promise<Context> {
   return launching;
 }
 
-/** The tab for a site, opened on first use and reused afterwards. */
-export async function tab(site: string): Promise<Page> {
-  const existing = tabs.get(site);
-  if (existing && !existing.isClosed()) return existing;
+function pool(site: string) {
+  let p = pools.get(site);
+  if (!p) pools.set(site, (p = { pages: [], busy: new Set(), waiting: [], opening: 0 }));
+  p.pages = p.pages.filter((pg) => !pg.isClosed());
+  return p;
+}
+
+async function openWindow(site: string): Promise<Page> {
   const ctx = await getContext();
-  const blank = ctx.pages().find((p) => p.url() === "about:blank" && ![...tabs.values()].includes(p));
+  const used = new Set([...pools.values()].flatMap((x) => x.pages));
+  const blank = ctx.pages().find((pg) => pg.url() === "about:blank" && !used.has(pg));
   const page = blank ?? (await ctx.newPage());
-  tabs.set(site, page);
+  pool(site).pages.push(page);
   return page;
 }
 
-/** Run `fn` with the site's tab, one at a time per site. */
-export function withTab<T>(site: string, fn: (page: Page) => Promise<T>): Promise<T> {
-  const prev = queues.get(site) ?? Promise.resolve();
-  const run = prev.catch(() => undefined).then(async () => fn(await tab(site)));
-  queues.set(site, run);
-  return run;
+/** A window for a site (the first one; opened on first use and reused afterwards). */
+export async function tab(site: string): Promise<Page> {
+  return pool(site).pages[0] ?? openWindow(site);
+}
+
+/**
+ * Run `fn` in one of the site's windows. Up to `windows` windows are opened and
+ * reused; each handles one page at a time, and callers wait for a free one.
+ */
+export async function withTab<T>(site: string, fn: (page: Page) => Promise<T>, windows = 1): Promise<T> {
+  const max = Math.max(1, windows);
+  for (;;) {
+    const p = pool(site);
+    let page = p.pages.find((pg) => !p.busy.has(pg));
+    if (!page && p.pages.length + p.opening < max) {
+      p.opening++;
+      try {
+        page = await openWindow(site);
+      } finally {
+        p.opening--;
+      }
+    }
+    if (page && !p.busy.has(page)) {
+      p.busy.add(page);
+      try {
+        return await fn(page);
+      } finally {
+        p.busy.delete(page);
+        p.waiting.shift()?.();
+      }
+    }
+    await new Promise<void>((resolve) => p.waiting.push(resolve));
+  }
 }
 
 /** Click the first visible button matching one of the labels (cookie banners). */
@@ -144,5 +176,5 @@ export async function settle(page: Page): Promise<void> {
 export async function closeBrowser(): Promise<void> {
   await context?.close().catch(() => undefined);
   context = null;
-  tabs.clear();
+  pools.clear();
 }

@@ -14,7 +14,7 @@ import { sliceDuration, type FlightProvider } from "./types.ts";
  * The open-source `fast-flights-ts` package reads Google's answer.
  * Unofficial: it can break when Google changes things, and heavy use gets
  * rate-limited. To stay well clear of that:
- *   - one request at a time, with a 23–40 s pause after each (GOOGLE_MIN_DELAY_MS)
+ *   - GOOGLE_WINDOWS browser windows (default 3), each starting a page about every 60 s (start to start), staggered
  *   - no automatic retries
  *   - on any sign of blocking (429, 403, 503, CAPTCHA) all Google requests stop
  *     for GOOGLE_COOLDOWN_MINUTES (default 3 h); cached prices are still used
@@ -206,7 +206,7 @@ async function searchInBrowser(q: LegQuery, ff: FF): Promise<GoogleResults> {
     } finally {
       page.off("response", onResponse);
     }
-  });
+  }, config.googleWindows);
 }
 
 /** Turn Google's results into fares. Exported for tests. */
@@ -264,13 +264,16 @@ export const googleProvider: FlightProvider = {
   // Several airports per side, one date per request.
   capabilities: { multiAirport: true, maxAirportsPerSide: GOOGLE_MAX_AIRPORTS, dateRange: false, returnFares: true },
   get concurrency() {
-    return config.googleConcurrency;
+    return config.browser === "off" ? config.googleConcurrency : config.googleWindows;
+  },
+  get startIntervalMs() {
+    return config.browser === "off" ? undefined : config.googleStartIntervalMs;
   },
   get minDelayMs() {
     return config.googleMinDelayMs;
   },
   configured: async () => !!(await load()),
-  note: "Free, unofficial. Prices are Google's base fares (full-service airlines usually include a bag; budget ones don't). One request per date covering up to 7 airports each side, sent slowly (23–40 s apart) with an automatic pause if Google pushes back.",
+  note: "Free, unofficial. Prices are Google's base fares (full-service airlines usually include a bag; budget ones don't). One request per date covering up to 7 airports each side, 3 browser windows, each starting a page about once a minute with an automatic pause if Google pushes back.",
   unavailable: () => googleGate.unavailable(),
   onRequest: () => googleGate.onRequest(),
   async search(q: LegQuery, ctx): Promise<Fare[]> {

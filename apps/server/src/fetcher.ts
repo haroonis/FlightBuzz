@@ -33,7 +33,55 @@ const providerChains = new Map<string, Promise<unknown>>();
  * `minDelayMs` plus up to 75% random jitter after the previous one ended.
  * Providers that allow parallel requests and need no pause run straight away.
  */
+interface Lane {
+  nextStart: number;
+  busy: boolean;
+}
+const lanes = new Map<string, { lanes: Lane[]; waiting: (() => void)[]; lastStart: number }>();
+
+/**
+ * Start-to-start pacing for providers with several lanes (browser windows):
+ * each lane starts a request about `startIntervalMs` after its previous start
+ * (±15%) and rests at least `minDelayMs` after each one; across lanes, starts
+ * are at least ~80% of interval/lanes apart, so they never fire together.
+ */
+async function lanePaced<T>(provider: FlightProvider, fn: () => Promise<T>): Promise<T> {
+  const interval = provider.startIntervalMs!;
+  const n = Math.max(1, provider.concurrency);
+  let st = lanes.get(provider.id);
+  if (!st || st.lanes.length !== n) {
+    st = { lanes: Array.from({ length: n }, () => ({ nextStart: 0, busy: false })), waiting: [], lastStart: 0 };
+    lanes.set(provider.id, st);
+  }
+  let lane: Lane | undefined;
+  while (!(lane = st.lanes.filter((l) => !l.busy).sort((a, b) => a.nextStart - b.nextStart)[0])) {
+    await new Promise<void>((resolve) => st!.waiting.push(resolve));
+  }
+  lane.busy = true;
+  try {
+    const spacing = (interval / n) * 0.8;
+    for (;;) {
+      const at = Math.max(lane.nextStart, st.lastStart + spacing);
+      const wait = at - Date.now();
+      if (wait <= 0) break;
+      await new Promise((r) => setTimeout(r, wait));
+    }
+    const start = Date.now();
+    st.lastStart = start;
+    lane.nextStart = start + interval * (0.85 + Math.random() * 0.3);
+    try {
+      return await fn();
+    } finally {
+      lane.nextStart = Math.max(lane.nextStart, Date.now() + provider.minDelayMs);
+    }
+  } finally {
+    lane.busy = false;
+    st.waiting.shift()?.();
+  }
+}
+
 function paced<T>(provider: FlightProvider, fn: () => Promise<T>): Promise<T> {
+  if (provider.startIntervalMs) return lanePaced(provider, fn);
   if (!provider.minDelayMs && provider.concurrency > 1) return fn();
   const prev = providerChains.get(provider.id) ?? Promise.resolve();
   const run = prev

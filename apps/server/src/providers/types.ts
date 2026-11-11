@@ -10,8 +10,14 @@ export interface FlightProvider {
   capabilities: ProviderCapabilities;
   /** Concurrent requests allowed. */
   concurrency: number;
-  /** Pause after each request, in ms (plus random jitter). */
+  /** Pause after each request, in ms (plus random jitter); with startIntervalMs, the minimum rest after a page. */
   minDelayMs: number;
+  /**
+   * If set: each of the `concurrency` lanes (browser windows) starts a request
+   * this long after its previous start (±15%), and starts across lanes are
+   * spread out instead of bunched.
+   */
+  startIntervalMs?: number;
   /** Has what it needs to run (keys, optional packages). */
   configured(): Promise<boolean> | boolean;
   note: string;
