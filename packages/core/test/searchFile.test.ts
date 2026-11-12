@@ -36,7 +36,8 @@ describe("searches.csv", () => {
 
   it("selects by id, group or all; disabled lines only by id", () => {
     expect(selectPlans(plans, ["all"]).map((p) => p.id)).toEqual(["primary", "fz", "sweep"]);
-    expect(selectPlans(plans, ["budget", "primary"]).map((p) => p.id)).toEqual(["primary", "fz"]);
+    expect(selectPlans(plans, ["budget", "primary"]).map((p) => p.id)).toEqual(["fz", "primary"]);
+    expect(selectPlans(plans, ["sweep", "all"]).map((p) => p.id)).toEqual(["sweep", "primary", "fz"]);
     expect(selectPlans(plans, ["misc"])).toHaveLength(0);
     expect(selectPlans(plans, ["nights"]).map((p) => p.id)).toEqual(["nights"]);
   });

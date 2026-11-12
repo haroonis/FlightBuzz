@@ -157,8 +157,18 @@ export function parseSearchFile(text: string): { plans: PlanLine[]; problems: Se
   return { plans, problems };
 }
 
-/** Pick plans by id or group ("all" = every enabled plan). Disabled plans are skipped unless named by id. */
+/**
+ * Pick plans by id or group, in the order the selectors are given ("all" adds
+ * every remaining enabled plan in file order). Disabled plans are skipped
+ * unless named by id. Each plan appears once.
+ */
 export function selectPlans(plans: PlanLine[], selectors: string[]): PlanLine[] {
-  if (!selectors.length || selectors.includes("all")) return plans.filter((p) => p.enabled);
-  return plans.filter((p) => selectors.includes(p.id) || (p.enabled && selectors.includes(p.group)));
+  const out: PlanLine[] = [];
+  const add = (p: PlanLine) => (out.includes(p) ? undefined : out.push(p));
+  for (const sel of selectors.length ? selectors : ["all"]) {
+    for (const p of plans) {
+      if (sel === "all" ? p.enabled : p.id === sel || (p.enabled && p.group === sel)) add(p);
+    }
+  }
+  return out;
 }
