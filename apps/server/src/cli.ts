@@ -10,6 +10,7 @@ import { fmtDuration, parseDsl, type Trip } from "@flightbuzz/core";
 import { refreshAll } from "./scheduler.ts";
 import { runSweep } from "./sweep.ts";
 import { estimatePages, loadPlans, runPlans, syncTrackedPlans } from "./plans.ts";
+import { DEFAULT_BEST, findBest } from "./best.ts";
 import { config } from "./config.ts";
 
 const [cmd, ...args] = process.argv.slice(2);
@@ -63,7 +64,16 @@ if (cmd === "refresh") {
     });
   }
   process.exit(0);
+} else if (cmd === "searches" && args[0] === "best") {
+  const list = findBest(DEFAULT_BEST, Number(args[1] ?? 10));
+  console.log(`Cheapest door-to-door from ${DEFAULT_BEST.home.join("/")} (leave from ${DEFAULT_BEST.leaveFrom}, back by ${DEFAULT_BEST.backBy}), from prices fetched in the last ${DEFAULT_BEST.maxAgeHours}h:`);
+  list.forEach((r, i) => {
+    console.log(`\n${i + 1}. £${r.total} (${r.kind}${r.kind === "via Europe" ? ` ${r.hub}` : ""})`);
+    for (const c of r.costs) console.log(`   £${String(c.gbp).padStart(4)}  ${c.label}`);
+    for (const n of r.notes) console.log(`   ! ${n}`);
+  });
+  process.exit(0);
 } else {
-  console.log('Usage: tsx src/cli.ts refresh | sweep "<text search>" [top] | searches list | searches run <id|group|all>...');
+  console.log('Usage: tsx src/cli.ts refresh | sweep "<text search>" [top] | searches list | searches run <id|group|all>... | searches best [n]');
   process.exit(1);
 }

@@ -95,6 +95,10 @@ npm run searches -- run budget-airlines      # a whole group
 npm run searches -- run all                  # every enabled plan
 ```
 
+To rank the cheapest **door-to-door** routings from everything already searched, run `npm run searches -- best 10` (or `GET /api/best`). It covers:
+- return tickets from home, or from another UK airport plus the train;
+- return tickets from any European airport, with the cheapest positioning flights there and back, airport transfers (e.g. Malpensa → Bergamo), hotel nights, and the real landing time back in Europe where known.
+
 The same is available as `GET /api/plans` and `POST /api/plans/run {"selectors": ["primary"]}`. All columns are documented in `packages/core/src/searchFile.ts`.
 
 ## Wide searches: every airport in a region

@@ -20,6 +20,7 @@ import { providerInfo } from "./providers/index.ts";
 import { registry } from "./search.ts";
 import { runSweep } from "./sweep.ts";
 import { estimatePages, loadPlans } from "./plans.ts";
+import { DEFAULT_BEST, findBest } from "./best.ts";
 
 export async function routes(app: FastifyInstance): Promise<void> {
   // Errors as { error: "message" }.
@@ -111,6 +112,9 @@ export async function routes(app: FastifyInstance): Promise<void> {
       jobs: plans.map((p) => ({ id: p.id, jobId: startJob(p.spec, undefined, p.kind === "sweep" ? (spec, opts) => runSweep(spec, p.top, opts) : undefined) })),
     };
   });
+
+  // Cheapest door-to-door routings from everything already searched.
+  app.get<{ Querystring: { limit?: string } }>("/api/best", async (req) => findBest(DEFAULT_BEST, Number(req.query.limit ?? 15)));
 
   // Wide search: scan every starting airport on one date pair, then run the
   // full search from the `top` cheapest (default 21, three Google pages per date).
