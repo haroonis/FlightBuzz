@@ -38,3 +38,4 @@ fz-times-bgy,yes,checks,search,LYP MUX,BGY,2026-12-31..2026-12-31,oneway,1,,,FZ,
 late16-naples,yes,late-16-dec,search,MAN LPL LBA BHX LHR LGW STN LTN EDI GLA NCL BRS EMA,NAP,2026-12-16,oneway,1,,,,,no,0,1,,no,Leave UK 16 Dec evening: to Naples direct or 1 stop by 17 Dec morning (flydubai NAP 17 Dec 12:15)
 late16-italy,yes,late-16-dec,search,MAN LPL LBA BHX LHR LGW STN LTN EDI GLA NCL BRS EMA,FCO CIA BRI MXP LIN BGY,2026-12-16,oneway,0,,,,,no,0,1,,no,Leave UK 16 Dec evening to Rome / Bari / Milan then train or early flight to Naples
 naples-17am,yes,late-16-dec,search,FCO CIA BRI MXP LIN BGY,NAP,2026-12-17,oneway,0,,,,,no,0,1,,no,Early 17 Dec flights into Naples
+uk-saudi-returns,yes,gulf,search,MAN LPL LBA LHR LGW BHX,RUH JED DMM,2026-12-15..2026-12-17,2026-12-31..2027-01-02,1,,,,,yes,0,1,,no,UK to Saudi returns to pair with Riyadh/Dammam to Lahore (£313-372; £168 only 18 Dec-3 Jan). Separate tickets in Saudi need a visa
