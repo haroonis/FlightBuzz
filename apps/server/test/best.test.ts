@@ -28,4 +28,21 @@ describe("findBest", () => {
     expect(r.costs[3].label).toContain("lands BGY 01/01 11:35");
     expect(r.notes).toEqual([]);
   });
+
+  it("combines a UK ⇄ hub return with a hub ⇄ Pakistan return, with visa and hotel", async () => {
+    const { cachePut } = await import("../src/db.ts");
+    const { findBest, DEFAULT_BEST } = await import("../src/best.ts");
+    const ret = (id: string, price: number, from: string, to: string, dep: string, arr: string, back: string): Fare => ({
+      ...fare(id, price, [seg(from, to, dep, arr, "Riyadh Air")]),
+      openReturn: { date: back, from: [to], to: [from] },
+    });
+    cachePut("ruh1", [ret("uk-ruh", 300, "MAN", "RUH", "2026-12-16T09:00", "2026-12-16T19:00", "2027-01-01")]);
+    cachePut("ruh2", [ret("ruh-lhe", 313, "RUH", "LHE", "2026-12-17T14:00", "2026-12-17T19:55", "2026-12-31")]);
+    const best = findBest({ ...DEFAULT_BEST, maxAgeHours: 1 }, 50).filter((r) => r.kind === "two returns via a hub");
+    expect(best).toHaveLength(1);
+    expect(best[0].hub).toBe("RUH");
+    // 300 + 313 + overnight hotel before the connection (50) + 1 night between returns (50) + Saudi visa (100)
+    expect(best[0].total).toBe(300 + 313 + 55 + 55 + 100);
+    expect(best[0].costs.some((c) => c.label.includes("visa"))).toBe(true);
+  });
 });

@@ -26,6 +26,8 @@ export interface BestOptions {
   hotel: Record<string, number>;
   /** Minimum time between flights on separate tickets, minutes. */
   connectMin: number;
+  /** Rough visa cost (GBP, UK passport) to change between separate tickets in a country, by country code. */
+  visa: Record<string, number>;
 }
 
 export const DEFAULT_BEST: BestOptions = {
@@ -38,6 +40,7 @@ export const DEFAULT_BEST: BestOptions = {
   trainFromHome: { MAN: 0, LPL: 12, LBA: 15, BHX: 20, EMA: 25, NCL: 30, LHR: 45, LGW: 45, STN: 45, LTN: 40, EDI: 40, GLA: 40, BRS: 40 },
   hotel: { IT: 50, ES: 50, PT: 50, GR: 45, TR: 45, RS: 40, HU: 45, RO: 40, AL: 35, DE: 60, FR: 65, NL: 70, BE: 65, AT: 60, CH: 90, "*": 55 },
   connectMin: 180,
+  visa: { SA: 100, BH: 20, KW: 15, AZ: 20, AE: 0, QA: 0, OM: 0, TR: 0, "*": 0 },
 };
 
 export interface CostLine {
@@ -47,7 +50,7 @@ export interface CostLine {
 
 export interface Routing {
   total: number;
-  kind: "from home" | "from another UK airport" | "via Europe";
+  kind: "from home" | "from another UK airport" | "via Europe" | "two returns via a hub";
   hub: string;
   costs: CostLine[];
   notes: string[];
@@ -175,11 +178,49 @@ export function findBest(o: BestOptions = DEFAULT_BEST, limit = 15): Routing[] {
     const costs = [...bestThere.costs, { ...lh, label: `${lh.label}${land ? `, lands ${hub} ${hm(land)}` : ""}` }, ...road(s.to), ...bestHome.costs];
     out.push({ total: costs.reduce((n, c) => n + c.gbp, 0), kind: "via Europe", hub, costs, notes });
   }
+  // Two returns: UK ⇄ hub, then hub ⇄ Pakistan (e.g. Manchester ⇄ Riyadh + Riyadh ⇄ Lahore).
+  const ukToHub = fares.filter((f) => f.openReturn && f.slices.length === 1 && UK.has(f.slices[0].from) && !dests.has(f.slices[0].to) && !UK.has(f.slices[0].to));
+  const hubToPk = returns.filter((f) => !UK.has(f.slices[0].from));
+  for (const a of ukToHub) {
+    const A = a.slices[0];
+    if (A.departLocal < o.leaveFrom) continue;
+    const b1 = a.openReturn!.date;
+    for (const b of hubToPk) {
+      const B = b.slices[0];
+      const g = ground(A.to, B.from);
+      if (!g || g.gbp > 60) continue;
+      const gap = mins(B.departLocal) - mins(A.arriveLocal) - g.minutes;
+      if (gap < o.connectMin || gap > 48 * 60) continue;
+      const b2 = b.openReturn!.date;
+      const slack = daysBetween(b2, b1);
+      if (slack < 0 || slack > 2 || b1 > o.backBy.slice(0, 10)) continue;
+      const country = airport(A.to)?.country ?? "";
+      const visa = o.visa[country] ?? o.visa["*"];
+      const t = home.has(A.from) ? 0 : (o.trainFromHome[A.from] ?? 50);
+      const costs: CostLine[] = [
+        ...(t ? [{ label: `train home ⇄ ${A.from} both ways (estimate)`, gbp: 2 * t }] : []),
+        { label: `${hm(A.departLocal)} ${route(a)} ${carriers(a)} (arrive ${hm(A.arriveLocal)}), return ticket back ${b1}`, gbp: gbp(a) },
+        ...(g.gbp ? [{ label: `${g.mode} ${A.to}→${B.from} and back`, gbp: 2 * g.gbp }] : []),
+        ...(gap > 10 * 60 ? hotel(A.to, 1) : []),
+        { label: `${hm(B.departLocal)} ${route(b)} ${carriers(b)}, return ticket back ${b2}`, gbp: gbp(b) },
+        ...road(B.to),
+        ...hotel(A.to, slack),
+        ...(visa ? [{ label: `visa to change tickets in ${country} (estimate)`, gbp: visa }] : []),
+      ];
+      out.push({
+        total: costs.reduce((n, c) => n + c.gbp, 0),
+        kind: "two returns via a hub",
+        hub: A.to,
+        costs,
+        notes: slack === 0 ? [`both returns on ${b1}: only works if the flights connect that day; check times`] : [],
+      });
+    }
+  }
   out.sort((a, b) => a.total - b.total);
   // One routing per hub + long-haul date pair, so the list isn't ten copies of one trip.
   const seen = new Set<string>();
   return out.filter((r) => {
-    const k = r.hub + "|" + r.costs.find((c) => c.label.includes("return ticket"))!.label.slice(0, 40);
+    const k = r.hub + "|" + r.costs.filter((c) => c.label.includes("return ticket")).map((c) => c.label.slice(0, 40)).join("|");
     if (seen.has(k)) return false;
     seen.add(k);
     return true;
