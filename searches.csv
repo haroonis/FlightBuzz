@@ -27,8 +27,8 @@ pos-budget-out,yes,positioning,search,MAN LPL LBA,BGY CIA NRN CRL BVA GRO REU,20
 pos-budget-back,yes,positioning,search,BGY CIA NRN CRL BVA GRO REU,MAN LPL LBA,2027-01-01..2027-01-04,oneway,0,,,,,no,0,1,,no,
 pos-italy-out,yes,positioning,search,MAN LPL LBA BHX LHR LGW STN LTN EDI GLA NCL BRS EMA,NAP FCO CIA BRI BGY MXP,2026-12-15..2026-12-16,oneway,0,,,,,no,0,1,,no,All UK airports to Naples / Rome / Bari / Milan
 pos-italy-back,yes,positioning,search,NAP FCO CIA BRI BGY MXP,MAN LPL LBA BHX LHR LGW STN LTN EDI GLA NCL BRS EMA,2026-12-31..2027-01-02,oneway,0,,,,,no,0,1,,no,flydubai from Pakistan lands in Italy next morning (e.g. 11:15)
-pos-istanbul-out,no,positioning,search,MAN LPL LBA BHX LHR LGW STN LTN EDI GLA NCL BRS EMA,IST SAW,2026-12-14..2026-12-15,oneway,1,,,,,no,0,1,,no,Not worth it at Christmas (£111-190 each way); kept for reference
-pos-istanbul-back,no,positioning,search,IST SAW,MAN LPL LBA BHX LHR LGW STN LTN EDI GLA NCL BRS EMA,2027-01-01..2027-01-03,oneway,1,,,,,no,0,1,,no,
+pos-istanbul-out,yes,positioning,search,MAN LPL LBA BHX LHR LGW STN LTN EDI GLA NCL BRS EMA,IST SAW,2026-12-15..2026-12-17,oneway,1,,,,,no,0,1,,no,For Air Arabia IST-SHJ-MUX £470-472 returns (16 Dec 18:40 / 17 Dec 14:05; found 14 Nov)
+pos-istanbul-back,yes,positioning,search,IST SAW,MAN LPL LBA BHX LHR LGW STN LTN EDI GLA NCL BRS EMA,2027-01-01..2027-01-03,oneway,1,,,,,no,0,1,,no,
 fz-times-naples,yes,checks,search,MUX SKT,NAP BGY,2026-12-31..2027-01-01,oneway,1,,,FZ,,no,0,1,,no,When flydubai lands back in Italy (times for the connection home)
 pos-milan-out,yes,positioning-nap-bgy,search,MAN LPL LBA BHX LHR LGW STN LTN EDI GLA NCL BRS EMA,BGY MXP LIN,2026-12-15..2026-12-16,oneway,0,,,,,no,0,1,,no,UK to Milan (Bergamo/Malpensa/Linate) night of 15 Dec or 16 Dec for flydubai BGY 16 Dec 12:35
 pos-naples-out,yes,positioning-nap-bgy,search,MAN LPL LBA BHX LHR LGW STN LTN EDI GLA NCL BRS EMA,NAP,2026-12-15..2026-12-16,oneway,0,,,,,no,0,1,,no,UK to Naples night of 15 Dec or 16 Dec for flydubai NAP 16/17 Dec 12:15
