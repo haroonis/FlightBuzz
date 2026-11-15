@@ -39,3 +39,5 @@ late16-naples,yes,late-16-dec,search,MAN LPL LBA BHX LHR LGW STN LTN EDI GLA NCL
 late16-italy,yes,late-16-dec,search,MAN LPL LBA BHX LHR LGW STN LTN EDI GLA NCL BRS EMA,FCO CIA BRI MXP LIN BGY,2026-12-16,oneway,0,,,,,no,0,1,,no,Leave UK 16 Dec evening to Rome / Bari / Milan then train or early flight to Naples
 naples-17am,yes,late-16-dec,search,FCO CIA BRI MXP LIN BGY,NAP,2026-12-17,oneway,0,,,,,no,0,1,,no,Early 17 Dec flights into Naples
 uk-saudi-returns,yes,gulf,search,MAN LPL LBA LHR LGW BHX,RUH JED DMM,2026-12-15..2026-12-17,2026-12-31..2027-01-02,1,,,,,yes,0,1,,no,UK to Saudi returns to pair with Riyadh/Dammam to Lahore (£313-372; £168 only 18 Dec-3 Jan). Separate tickets in Saudi need a visa
+pk-europe-back,yes,pk-oneway-back,search,MUX LHE LYP ISB SKT,IST SAW BGY MXP NAP FCO ATH BUD MAD BCN WAW KRK SOF OTP,2026-12-31..2027-01-02,oneway,1,24,,,,no,0,1,,no,One-way Pakistan to Europe for the way back (e.g. MUX-JED-IST ~£180)
+pk-gulf-back,yes,pk-oneway-back,search,MUX LHE LYP ISB SKT,DXB SHJ AUH DOH BAH MCT KWI RUH JED DMM MED,2026-12-31..2027-01-02,oneway,0,,,,,no,0,1,,no,One-way Pakistan to the Gulf/Saudi for the way back
