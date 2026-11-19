@@ -31,7 +31,7 @@ export const config = {
    */
   googleMinDelayMs: num(env.GOOGLE_MIN_DELAY_MS, 5000),
   /** Each browser window starts a Google page about this often (start to start, ±15%). */
-  googleStartIntervalMs: num(env.GOOGLE_START_INTERVAL_MS, 60000),
+  googleStartIntervalMs: num(env.GOOGLE_START_INTERVAL_MS, 180000),
   /** Browser windows searching Google at the same time (staggered). */
   googleWindows: num(env.GOOGLE_WINDOWS, 3),
   googleConcurrency: num(env.GOOGLE_CONCURRENCY, 1),

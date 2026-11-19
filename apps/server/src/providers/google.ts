@@ -284,7 +284,7 @@ export const googleProvider: FlightProvider = {
     return config.googleMinDelayMs;
   },
   configured: async () => !!(await load()),
-  note: "Free, unofficial. Prices are Google's base fares (full-service airlines usually include a bag; budget ones don't). One request per date covering up to 7 airports each side, 3 browser windows, each starting a page about once a minute with an automatic pause if Google pushes back.",
+  note: "Free, unofficial. Prices are Google's base fares (full-service airlines usually include a bag; budget ones don't). One request per date covering up to 7 airports each side, 3 browser windows, each starting a page about every 3 minutes (about one a minute overall), with an automatic pause if Google pushes back.",
   unavailable: () => googleGate.unavailable(),
   onRequest: () => googleGate.onRequest(),
   async search(q: LegQuery, ctx): Promise<Fare[]> {
