@@ -195,18 +195,29 @@ async function searchInBrowser(q: LegQuery, ff: FF): Promise<GoogleResults> {
       } catch {
         /* no embedded results */
       }
-      for (const t of await Promise.all(rpc)) {
+      const texts = await Promise.all(rpc);
+      for (const t of texts) {
         try {
           if (t) results.push(...ff.parseRpcResponse(t));
         } catch {
           /* not a results payload */
         }
       }
+      // A soft block: Google answers the results request with an error instead of
+      // flights (seen shortly before a robot check). Treat it as pushback so the
+      // gate pauses, instead of recording "no flights" and carrying on.
+      if (!results.length && isSoftBlock(texts)) throw new Error("Google Flights returned an error instead of results (unusual traffic)");
       return results;
     } finally {
       page.off("response", onResponse);
     }
   }, config.googleWindows);
+}
+
+/** True when Google's results requests came back only as error responses. Exported for tests. */
+export function isSoftBlock(rpcTexts: string[]): boolean {
+  const texts = rpcTexts.filter(Boolean);
+  return texts.length > 0 && texts.every((t) => t.includes("travel.frontend.flights.ErrorResponse"));
 }
 
 /** Turn Google's results into fares. Exported for tests. */

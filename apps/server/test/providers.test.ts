@@ -154,4 +154,12 @@ describe("google itinerary splitting", () => {
     const fares = googleFares(r as never, { ...q, from: ["BGY"], to: ["DXB"], returnFrom: "2027-01-01", returnTo: "2027-01-01" });
     expect(fares[0].slices.map((s) => `${s.from}-${s.to}`)).toEqual(["BGY-DXB", "DXB-BGY"]);
   });
+
+  it("recognises Google's error answer as a soft block", async () => {
+    const { isSoftBlock } = await import("../src/providers/google.ts");
+    const err = `)]}'\n\n269\n[["wrb.fr",null,null,null,null,[13,null,[["type.googleapis.com/travel.frontend.flights.ErrorResponse",[]]]]]]\n25\n[["e",4,null,null,362]]`;
+    expect(isSoftBlock([err])).toBe(true);
+    expect(isSoftBlock([err, ")]}'\n[[\"wrb.fr\",\"results\"]]"])).toBe(false);
+    expect(isSoftBlock([])).toBe(false);
+  });
 });
