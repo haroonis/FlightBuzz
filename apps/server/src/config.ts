@@ -34,6 +34,13 @@ export const config = {
   googleStartIntervalMs: num(env.GOOGLE_START_INTERVAL_MS, 105000),
   /** Browser windows searching Google at the same time (staggered). */
   googleWindows: num(env.GOOGLE_WINDOWS, 3),
+  /**
+   * Return-ticket pages: most origin / destination airports per page. Google
+   * sometimes answers multi-airport round trips with an error (Nov 2026);
+   * 1 and 1 means one airport pair per page.
+   */
+  googleReturnMaxFrom: num(env.GOOGLE_RETURN_MAX_FROM, 7),
+  googleReturnMaxTo: num(env.GOOGLE_RETURN_MAX_TO, 7),
   googleConcurrency: num(env.GOOGLE_CONCURRENCY, 1),
   /** Hard cap on Google requests per day. */
   googleDailyLimit: num(env.GOOGLE_DAILY_LIMIT, 150),

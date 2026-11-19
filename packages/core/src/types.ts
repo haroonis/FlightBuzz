@@ -233,6 +233,9 @@ export interface ProviderCapabilities {
   multiAirport: boolean;
   /** Most airports per side in one request (when multiAirport). */
   maxAirportsPerSide?: number;
+  /** For return-ticket requests: most origin / destination airports in one request (default maxAirportsPerSide). */
+  maxReturnFrom?: number;
+  maxReturnTo?: number;
   /** Accepts a departure date range in one request. */
   dateRange: boolean;
   /** Can price native return tickets. */

@@ -273,7 +273,9 @@ export const googleProvider: FlightProvider = {
   id: "google",
   name: "Google Flights",
   // Several airports per side, one date per request.
-  capabilities: { multiAirport: true, maxAirportsPerSide: GOOGLE_MAX_AIRPORTS, dateRange: false, returnFares: true },
+  get capabilities() {
+    return { multiAirport: true, maxAirportsPerSide: GOOGLE_MAX_AIRPORTS, maxReturnFrom: config.googleReturnMaxFrom, maxReturnTo: config.googleReturnMaxTo, dateRange: false, returnFares: true };
+  },
   get concurrency() {
     return config.browser === "off" ? config.googleConcurrency : config.googleWindows;
   },

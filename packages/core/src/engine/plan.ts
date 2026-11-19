@@ -134,7 +134,10 @@ export function splitForProvider(q: LegQuery, caps: ProviderCapabilities): LegQu
   const days = caps.dateRange ? [[q.departFrom, q.departTo]] : eachDay(q.departFrom, q.departTo).map((d) => [d, d]);
   const chunk = (xs: string[], n: number) => !Number.isFinite(n) ? [xs] : Array.from({ length: Math.ceil(xs.length / n) }, (_, i) => xs.slice(i * n, i * n + n));
   const size = caps.multiAirport ? (caps.maxAirportsPerSide ?? Infinity) : 1;
-  const pairs = chunk(q.from, size).flatMap((f) => chunk(q.to, size).map((t) => [f, t]));
+  const ret = !!q.returnFrom && caps.returnFares;
+  const fromSize = ret ? Math.min(size, caps.maxReturnFrom ?? Infinity) : size;
+  const toSize = ret ? Math.min(size, caps.maxReturnTo ?? Infinity) : size;
+  const pairs = chunk(q.from, fromSize).flatMap((f) => chunk(q.to, toSize).map((t) => [f, t]));
   const out: LegQuery[] = [];
   for (const [df, dt] of days) {
     for (const [from, to] of pairs) {

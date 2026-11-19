@@ -95,6 +95,18 @@ describe("engine", () => {
     expect(splitForProvider(direct, { multiAirport: true, dateRange: false, returnFares: false })).toHaveLength(10);
     expect(splitForProvider(direct, { multiAirport: true, dateRange: true, returnFares: true })).toHaveLength(1);
   });
+
+  it("can split return-ticket pages to fewer airports per side", () => {
+    const rt = { from: ["BGY", "NAP"], to: ["MUX", "LYP", "LHE"], departFrom: "2026-12-17", departTo: "2026-12-17", returnFrom: "2026-12-30", returnTo: "2026-12-30", maxStops: 1, passengers: { adults: 1, children: 0, infants: 0 }, cabin: "economy", currency: "GBP" } as const;
+    const caps = { multiAirport: true, maxAirportsPerSide: 7, dateRange: false, returnFares: true };
+    expect(splitForProvider({ ...rt }, caps)).toHaveLength(1);
+    const oneOrigin = splitForProvider({ ...rt }, { ...caps, maxReturnFrom: 1 });
+    expect(oneOrigin.map((x) => `${x.from.join()}>${x.to.join()}`)).toEqual(["BGY>MUX,LYP,LHE", "NAP>MUX,LYP,LHE"]);
+    expect(splitForProvider({ ...rt }, { ...caps, maxReturnFrom: 1, maxReturnTo: 1 })).toHaveLength(6);
+    // One-way pages keep several airports per side.
+    const { returnFrom: _r, returnTo: _t, ...ow } = rt;
+    expect(splitForProvider({ ...ow }, { ...caps, maxReturnFrom: 1, maxReturnTo: 1 })).toHaveLength(1);
+  });
 });
 
 describe("splitForProvider chunking", () => {

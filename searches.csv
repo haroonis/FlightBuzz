@@ -43,3 +43,5 @@ uk-saudi-returns,yes,gulf,search,MAN LPL LBA LHR LGW BHX,RUH JED DMM,2026-12-15.
 pk-europe-back,yes,pk-oneway-back,search,MUX LHE LYP ISB SKT,IST SAW BGY MXP NAP FCO ATH BUD MAD BCN WAW KRK SOF OTP,2026-12-31..2027-01-02,oneway,1,24,,,,no,0,1,,no,One-way Pakistan to Europe for the way back (e.g. MUX-JED-IST ~£180)
 pk-gulf-back,yes,pk-oneway-back,search,MUX LHE LYP ISB SKT,DXB SHJ AUH DOH BAH MCT KWI RUH JED DMM MED,2026-12-31..2027-01-02,oneway,0,,,,,no,0,1,,no,One-way Pakistan to the Gulf/Saudi for the way back
 saudi-europe-back,yes,pk-oneway-back,search,JED RUH DMM MED,IST SAW BGY MXP NAP FCO ATH BUD MAD BCN WAW KRK SOF OTP MAN LGW STN LTN,2026-12-31..2027-01-03,oneway,1,24,,,,no,0,1,,no,Saudi to Europe/UK one-way: second ticket after Pakistan to Saudi (e.g. MUX-JED + JED-IST)
+probe-1origin,yes,probe,search,NAP,MUX LYP LHE,2026-12-17,2026-12-30,1,,,,,yes,0,1,,no,Test page: one origin and several destinations (does Google answer multi-airport round trips?)
+probe-1x1,yes,probe,search,NAP,MUX,2026-12-17,2026-12-30,1,,,,,yes,0,1,,no,Test page: one airport each side
