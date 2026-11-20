@@ -35,12 +35,12 @@ export const config = {
   /** Browser windows searching Google at the same time (staggered). */
   googleWindows: num(env.GOOGLE_WINDOWS, 3),
   /**
-   * Return-ticket pages: most origin / destination airports per page. Google
-   * sometimes answers multi-airport round trips with an error (Nov 2026);
-   * 1 and 1 means one airport pair per page.
+   * Return-ticket pages: most origin / destination airports per page. Since
+   * 19 Nov 2026 Google answers multi-airport round trips with an error, so the
+   * default is one airport pair per page. One-way pages still take up to 7 a side.
    */
-  googleReturnMaxFrom: num(env.GOOGLE_RETURN_MAX_FROM, 7),
-  googleReturnMaxTo: num(env.GOOGLE_RETURN_MAX_TO, 7),
+  googleReturnMaxFrom: num(env.GOOGLE_RETURN_MAX_FROM, 1),
+  googleReturnMaxTo: num(env.GOOGLE_RETURN_MAX_TO, 1),
   googleConcurrency: num(env.GOOGLE_CONCURRENCY, 1),
   /** Hard cap on Google requests per day. */
   googleDailyLimit: num(env.GOOGLE_DAILY_LIMIT, 150),
