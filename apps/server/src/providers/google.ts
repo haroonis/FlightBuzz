@@ -19,11 +19,14 @@ import { sliceDuration, type FlightProvider } from "./types.ts";
  *   - on any sign of blocking (429, 403, 503, CAPTCHA) all Google requests stop
  *     for GOOGLE_COOLDOWN_MINUTES (default 3 h); cached prices are still used
  *   - at most GOOGLE_DAILY_LIMIT requests per day (default 150, kept across restarts)
+ *   - optionally at most GOOGLE_BATCH_LIMIT requests per run (0 = no limit), so a
+ *     long list can be worked through in small batches across the day
  */
 
 export const googleGate = new PoliteGate("google", () => ({
   cooldownMinutes: config.googleCooldownMinutes,
   dailyLimit: config.googleDailyLimit,
+  batchLimit: config.googleBatchLimit,
 }));
 
 type FF = typeof import("fast-flights-ts");

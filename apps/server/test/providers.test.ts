@@ -163,3 +163,15 @@ describe("google itinerary splitting", () => {
     expect(isSoftBlock([])).toBe(false);
   });
 });
+
+describe("PoliteGate batch limit", () => {
+  it("stops a run after the batch limit, without a pause", async () => {
+    const { PoliteGate } = await import("../src/providers/polite.ts");
+    const gate = new PoliteGate("batch-test", () => ({ cooldownMinutes: 180, dailyLimit: 100, batchLimit: 2 }));
+    expect(gate.unavailable()).toBeUndefined();
+    gate.onRequest();
+    gate.onRequest();
+    expect(gate.unavailable()).toMatch(/batch limit of 2/);
+    expect(gate.status().blockedUntil).toBeNull();
+  });
+});

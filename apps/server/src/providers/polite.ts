@@ -17,10 +17,12 @@ export class PoliteGate {
   private blockReason = "";
   private day = "";
   private used = 0;
+  /** Requests made by this process (not saved): for the per-run batch limit. */
+  private usedThisRun = 0;
 
   constructor(
     private name: string,
-    private opts: () => { cooldownMinutes: number; dailyLimit: number },
+    private opts: () => { cooldownMinutes: number; dailyLimit: number; batchLimit?: number },
   ) {
     const saved = kvGet<GateState>(`gate:${name}`);
     if (saved) Object.assign(this, saved);
@@ -37,6 +39,8 @@ export class PoliteGate {
       return `paused until ${until} UTC after ${this.blockReason}; using cached prices`;
     }
     if (this.day === today() && this.used >= this.opts().dailyLimit) return `daily limit of ${this.opts().dailyLimit} requests reached`;
+    const batch = this.opts().batchLimit;
+    if (batch && this.usedThisRun >= batch) return `batch limit of ${batch} requests for this run reached; the rest next run`;
     return undefined;
   }
 
@@ -46,6 +50,7 @@ export class PoliteGate {
       this.used = 0;
     }
     this.used++;
+    this.usedThisRun++;
     this.save();
   }
 

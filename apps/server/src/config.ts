@@ -44,6 +44,8 @@ export const config = {
   googleConcurrency: num(env.GOOGLE_CONCURRENCY, 1),
   /** Hard cap on Google requests per day. */
   googleDailyLimit: num(env.GOOGLE_DAILY_LIMIT, 150),
+  /** Most Google requests in one run (0 = no limit); the rest wait for the next run. */
+  googleBatchLimit: num(env.GOOGLE_BATCH_LIMIT, 0),
   /** After a block (429 / CAPTCHA), stop asking Google for this long. */
   googleCooldownMinutes: num(env.GOOGLE_COOLDOWN_MINUTES, 180),
   /** Kiwi answers a whole leg (all airports, all dates) per request, so far fewer requests are needed. */
