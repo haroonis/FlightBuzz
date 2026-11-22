@@ -66,7 +66,7 @@ if (cmd === "refresh") {
   process.exit(0);
 } else if (cmd === "searches" && args[0] === "best") {
   const list = findBest(DEFAULT_BEST, Number(args[1] ?? 10));
-  console.log(`Cheapest door-to-door from ${DEFAULT_BEST.home.join("/")} (leave from ${DEFAULT_BEST.leaveFrom}, back by ${DEFAULT_BEST.backBy}), from prices fetched in the last ${DEFAULT_BEST.maxAgeHours}h:`);
+  console.log(`Cheapest door-to-door from ${DEFAULT_BEST.home.join("/")} (leave from ${DEFAULT_BEST.leaveFrom}, back by ${DEFAULT_BEST.backBy}), from prices fetched in the last ${DEFAULT_BEST.maxAgeHours}h (positioning flights: ${DEFAULT_BEST.positioningMaxAgeHours}h):`);
   list.forEach((r, i) => {
     console.log(`\n${i + 1}. £${r.total} (${r.kind}${r.kind === "via Europe" ? ` ${r.hub}` : ""})`);
     for (const c of r.costs) console.log(`   £${String(c.gbp).padStart(4)}  ${c.label}`);

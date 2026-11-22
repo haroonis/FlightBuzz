@@ -20,6 +20,8 @@ export interface BestOptions {
   backBy: string;
   /** Ignore prices older than this. */
   maxAgeHours: number;
+  /** Positioning flights (short one-ways within Europe/UK) may be older than that, up to this. */
+  positioningMaxAgeHours?: number;
   /** Rough one-way train fare from home to other UK airports, in GBP. */
   trainFromHome: Record<string, number>;
   /** Rough cheapest hotel per night by country code, in GBP (default `*`). */
@@ -37,6 +39,7 @@ export const DEFAULT_BEST: BestOptions = {
   leaveFrom: "2026-12-15T15:00",
   backBy: "2027-01-03T23:59",
   maxAgeHours: 72,
+  positioningMaxAgeHours: 168,
   trainFromHome: { MAN: 0, LPL: 12, LBA: 15, BHX: 20, EMA: 25, NCL: 30, LHR: 45, LGW: 45, STN: 45, LTN: 40, EDI: 40, GLA: 40, BRS: 40 },
   hotel: { IT: 50, ES: 50, PT: 50, GR: 45, TR: 45, RS: 40, HU: 45, RO: 40, AL: 35, DE: 60, FR: 65, NL: 70, BE: 65, AT: 60, CH: 90, "*": 55 },
   connectMin: 180,
@@ -82,11 +85,16 @@ function loadFares(maxAgeHours: number): Fare[] {
       if (!prev || r.fetched_at > prev.at) latest.set(k, { f, at: r.fetched_at });
     }
   }
-  return [...latest.values()].map((x) => x.f);
+  // fetchedAt from the cache row: when the page was actually read.
+  return [...latest.values()].map((x) => ({ ...x.f, fetchedAt: new Date(x.at).toISOString() }));
 }
 
 export function findBest(o: BestOptions = DEFAULT_BEST, limit = 15): Routing[] {
-  const fares = loadFares(o.maxAgeHours);
+  const posAge = Math.max(o.maxAgeHours, o.positioningMaxAgeHours ?? o.maxAgeHours);
+  const all = loadFares(posAge);
+  const fresh = (f: Fare) => Date.now() - Date.parse(f.fetchedAt) <= o.maxAgeHours * 3600_000;
+  // Long-haul and connecting fares must be recent; short positioning flights can be older.
+  const fares = all.filter((f) => fresh(f) || (f.slices.length === 1 && !f.openReturn && f.slices[0].segments.length === 1));
   const dests = new Set([...o.to, ...Object.keys(o.roadTo)]);
   const home = new Set(o.home);
   const oneWays = fares.filter((f) => f.slices.length === 1 && !f.openReturn);
