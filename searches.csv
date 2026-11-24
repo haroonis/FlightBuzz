@@ -52,3 +52,4 @@ ist-1x1,yes,daily,search,IST,MUX,2026-12-16..2026-12-17,2026-12-30..2026-12-31,1
 fco-1x1,yes,daily,search,FCO,LHE,2026-12-16..2026-12-17,2026-12-30..2026-12-31,1,,,,,yes,0,1,,no,Daily: Air Arabia/Fly Jinnah Rome to Lahore
 bgy-dates,yes,checks,search,BGY,MUX,2026-12-15..2026-12-17,2026-12-30..2027-01-01,1,,,,,yes,0,1,,no,Bergamo to Multan on every date pair incl. 15 Dec (£519 in the 20 Nov search log)
 man-milan-14,yes,positioning,search,MAN,BGY MXP LIN,2026-12-14..2026-12-15,oneway,0,,,,,no,0,1,,no,Manchester to Milan the day before a 15 Dec flydubai departure (BGY 12:35)
+milan-area-back,yes,positioning,search,BGY MXP LIN VRN VCE TSF BLQ TRN GOA ZRH,MAN LPL LBA BHX EMA LTN STN,2026-12-30..2027-01-01,oneway,0,,,,,no,0,1,,no,Ways home after flydubai lands in Bergamo: Milan airports and cities within a few hours by train
