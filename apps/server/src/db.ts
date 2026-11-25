@@ -156,7 +156,17 @@ export function cacheGet(key: string, maxAgeMinutes: number): Fare[] | undefined
   return JSON.parse(r.fares);
 }
 
+/**
+ * Store a page's fares. An empty answer never replaces fares already stored for
+ * the same page: Google sometimes serves a blank results page when it is
+ * throttling us, and that must not wipe the last good prices. (Their age still
+ * shows, so stale prices are visible as such.)
+ */
 export function cachePut(key: string, fares: Fare[]): void {
+  if (!fares.length) {
+    const prev = db.prepare("SELECT fares FROM fare_cache WHERE key = ?").get(key) as { fares: string } | undefined;
+    if (prev && prev.fares !== "[]") return;
+  }
   db.prepare("INSERT INTO fare_cache (key, fetched_at, fares) VALUES (?, ?, ?) ON CONFLICT(key) DO UPDATE SET fetched_at = excluded.fetched_at, fares = excluded.fares").run(
     key,
     Date.now(),
