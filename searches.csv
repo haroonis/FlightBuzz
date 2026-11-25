@@ -61,3 +61,4 @@ near-nap-back,yes,positioning,search,QSR PSR BRI BDS SUF PEG FOG,MAN LPL LBA BHX
 early-fz,yes,early-dec,search,NAP BGY,MUX,2026-12-12..2026-12-13,2026-12-30..2026-12-31,1,,,,,yes,0,1,,no,Leaving Fri 11 / Sat 12 Dec: flydubai Naples/Bergamo to Multan out 12-13 Dec
 early-pos,yes,early-dec,search,MAN,NAP BGY MXP LIN CIA,2026-12-11..2026-12-12,oneway,0,,,,,no,0,1,,no,Manchester to Naples/Milan/Rome 11-12 Dec
 early-mil-nap,yes,early-dec,search,MXP LIN BGY,NAP,2026-12-12..2026-12-13,oneway,0,,,,,no,0,1,,no,Milan to Naples 12-13 Dec
+late15-1stop,yes,positioning,search,MAN LPL LBA,BGY MXP LIN VRN,2026-12-15,oneway,1,,,,,no,0,1,,no,15 Dec connections to the Milan area/Verona (for flydubai BGY 23:00)
