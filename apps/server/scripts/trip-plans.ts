@@ -78,8 +78,9 @@ const others = findBest({ ...DEFAULT_BEST, home: ["MAN"], hotel: { "*": HOTEL },
   .filter((r) => r.total < 5000 && r.outbound)
   .map((r) => ({ r, h: hours(r.outbound!.from, r.outbound!.leaveLocal, r.outbound!.to, r.outbound!.arriveLocal) }))
   .filter(({ r }) => r.outbound!.leaveLocal >= "2026-12-14" && r.outbound!.leaveLocal < "2026-12-17")
-  // Not just plans 1–4 again with a different way to the airport.
-  .filter(({ r }) => !r.costs.some((c) => /^(15\/12 12:35 BGY|15\/12 23:00 BGY|16\/12 12:15 NAP)-/.test(c.label)))
+  // Not just plans 1–3 again with a different way to the airport (variants of plan 4, the
+  // Bergamo 23:00 flight, are wanted).
+  .filter(({ r }) => !r.costs.some((c) => /^(15\/12 12:35 BGY|16\/12 12:15 NAP)-/.test(c.label)))
   .filter(({ r, h }) => r.total < 700 || (r.total < 800 && h <= plan4Hours + 0.01));
 console.log(`\nOther routings from Manchester leaving 14–16 Dec: under £700, or under £800 with Manchester → Pakistan ≤ ${fmtH(plan4Hours)} (plan 4): ${others.length}`);
 for (const { r, h } of others.slice(0, 8)) {
