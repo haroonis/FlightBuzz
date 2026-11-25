@@ -57,6 +57,8 @@ export interface Routing {
   hub: string;
   costs: CostLine[];
   notes: string[];
+  /** Outbound journey: when and where it starts (first flight) and reaches Pakistan (local times). */
+  outbound?: { from: string; leaveLocal: string; to: string; arriveLocal: string };
 }
 
 const UK = new Set(AIRPORTS.filter((a) => a.country === "GB").map((a) => a.iata));
@@ -134,14 +136,14 @@ export function findBest(o: BestOptions = DEFAULT_BEST, limit = 15): Routing[] {
     if (home.has(hub)) {
       if (s.departLocal < o.leaveFrom || back > o.backBy.slice(0, 10)) continue;
       const costs = [lh, ...road(s.to)];
-      out.push({ total: costs.reduce((n, c) => n + c.gbp, 0), kind: "from home", hub, costs, notes: [] });
+      out.push({ total: costs.reduce((n, c) => n + c.gbp, 0), kind: "from home", hub, costs, notes: [], outbound: { from: hub, leaveLocal: s.departLocal, to: s.to, arriveLocal: s.arriveLocal } });
       continue;
     }
     if (UK.has(hub)) {
       if (s.departLocal < o.leaveFrom || back > o.backBy.slice(0, 10)) continue;
       const t = o.trainFromHome[hub] ?? 50;
       const costs = [{ label: `train home ⇄ ${hub} both ways (estimate)`, gbp: 2 * t }, lh, ...road(s.to)];
-      out.push({ total: costs.reduce((n, c) => n + c.gbp, 0), kind: "from another UK airport", hub, costs, notes: [] });
+      out.push({ total: costs.reduce((n, c) => n + c.gbp, 0), kind: "from another UK airport", hub, costs, notes: [], outbound: { from: hub, leaveLocal: s.departLocal, to: s.to, arriveLocal: s.arriveLocal } });
       continue;
     }
     // Via a European hub: cheapest way there and back from any UK airport.
@@ -149,7 +151,7 @@ export function findBest(o: BestOptions = DEFAULT_BEST, limit = 15): Routing[] {
     // Unknown landing time: assume the next day at noon (long-haul returns usually land in Europe next morning).
     const landAt = land ?? `${addDays(back, 1)}T12:00`;
     const notes = land ? [] : [`landing time back in ${hub} not searched: assumed ${hm(landAt)}; check before booking`];
-    let bestThere: { costs: CostLine[]; total: number } | undefined;
+    let bestThere: { costs: CostLine[]; total: number; from: string; leaveLocal: string } | undefined;
     for (const p of direct) {
       const P = p.slices[0];
       if (!UK.has(P.from) || !near(hub).includes(P.to) || P.departLocal < o.leaveFrom) continue;
@@ -163,7 +165,7 @@ export function findBest(o: BestOptions = DEFAULT_BEST, limit = 15): Routing[] {
         ...hotel(hub, nights),
       ];
       const total = costs.reduce((n, c) => n + c.gbp, 0);
-      if (!bestThere || total < bestThere.total) bestThere = { costs, total };
+      if (!bestThere || total < bestThere.total) bestThere = { costs, total, from: P.from, leaveLocal: P.departLocal };
     }
     if (!bestThere) continue;
     let bestHome: { costs: CostLine[]; total: number } | undefined;
@@ -184,7 +186,7 @@ export function findBest(o: BestOptions = DEFAULT_BEST, limit = 15): Routing[] {
     }
     if (!bestHome) continue;
     const costs = [...bestThere.costs, { ...lh, label: `${lh.label}${land ? `, lands ${hub} ${hm(land)}` : ""}` }, ...road(s.to), ...bestHome.costs];
-    out.push({ total: costs.reduce((n, c) => n + c.gbp, 0), kind: "via Europe", hub, costs, notes });
+    out.push({ total: costs.reduce((n, c) => n + c.gbp, 0), kind: "via Europe", hub, costs, notes, outbound: { from: bestThere.from, leaveLocal: bestThere.leaveLocal, to: s.to, arriveLocal: s.arriveLocal } });
   }
   // Two returns: UK ⇄ hub, then hub ⇄ Pakistan (e.g. Manchester ⇄ Riyadh + Riyadh ⇄ Lahore).
   const ukToHub = fares.filter((f) => f.openReturn && f.slices.length === 1 && UK.has(f.slices[0].from) && !dests.has(f.slices[0].to) && !UK.has(f.slices[0].to));
