@@ -58,3 +58,6 @@ it-15dec,yes,positioning,search,MAN LPL LBA,IT,2026-12-15,oneway,0,,,,,no,0,1,,n
 milan-naples-16,yes,positioning,search,MXP LIN BGY,NAP,2026-12-16,oneway,0,,,,,no,0,1,,no,Early 16 Dec Milan to Naples after MAN-MXP 15 Dec 19:10, for flydubai NAP 16 Dec 12:15
 near-nap-out,yes,positioning,search,MAN LPL LBA BHX LGW STN LTN,QSR PSR BRI BDS SUF PEG FOG,2026-12-15..2026-12-16,oneway,0,,,,,no,0,1,,no,Other airports within a few hours of Naples (Salerno/Pescara/Bari/Brindisi/Lamezia/Perugia/Foggia)
 near-nap-back,yes,positioning,search,QSR PSR BRI BDS SUF PEG FOG,MAN LPL LBA BHX LGW STN LTN,2026-12-31..2027-01-01,oneway,0,,,,,no,0,1,,no,
+early-fz,yes,early-dec,search,NAP BGY,MUX,2026-12-12..2026-12-13,2026-12-30..2026-12-31,1,,,,,yes,0,1,,no,Leaving Fri 11 / Sat 12 Dec: flydubai Naples/Bergamo to Multan out 12-13 Dec
+early-pos,yes,early-dec,search,MAN,NAP BGY MXP LIN CIA,2026-12-11..2026-12-12,oneway,0,,,,,no,0,1,,no,Manchester to Naples/Milan/Rome 11-12 Dec
+early-mil-nap,yes,early-dec,search,MXP LIN BGY,NAP,2026-12-12..2026-12-13,oneway,0,,,,,no,0,1,,no,Milan to Naples 12-13 Dec
