@@ -45,7 +45,7 @@ pk-gulf-back,yes,pk-oneway-back,search,MUX LHE LYP ISB SKT,DXB SHJ AUH DOH BAH M
 saudi-europe-back,yes,pk-oneway-back,search,JED RUH DMM MED,IST SAW BGY MXP NAP FCO ATH BUD MAD BCN WAW KRK SOF OTP MAN LGW STN LTN,2026-12-31..2027-01-03,oneway,1,24,,,,no,0,1,,no,Saudi to Europe/UK one-way: second ticket after Pakistan to Saudi (e.g. MUX-JED + JED-IST)
 probe-1origin,yes,probe,search,NAP,MUX LYP LHE,2026-12-17,2026-12-30,1,,,,,yes,0,1,,no,Test page: one origin and several destinations (does Google answer multi-airport round trips?)
 probe-1x1,yes,probe,search,NAP,MUX,2026-12-17,2026-12-30,1,,,,,yes,0,1,,no,Test page: one airport each side
-key-1x1,yes,daily,search,NAP BGY,MUX,2026-12-16..2026-12-17,2026-12-30..2026-12-31,1,,,,,yes,0,1,,no,Daily: the two key flydubai fares as single airport pairs (Google limits this machine to ~20 round-trip pages)
+key-1x1,yes,daily,search,NAP,MUX,2026-12-16..2026-12-17,2026-12-30..2026-12-31,1,,,,,yes,0,1,,no,Daily: the two key flydubai fares as single airport pairs (Google limits this machine to ~20 round-trip pages)
 bcn-1x1,yes,daily,search,BCN,SKT ISB,2026-12-16,2026-12-30..2026-12-31,2,,,,,yes,0,1,,no,Daily: Barcelona Qatar fares as single airport pairs
 key-lyp,yes,daily,search,BGY NAP,LYP,2026-12-16..2026-12-17,2026-12-30..2026-12-31,1,,,,,yes,0,1,,no,Daily: Bergamo/Naples to Faisalabad as single airport pairs
 ist-1x1,yes,daily,search,IST,MUX,2026-12-16..2026-12-17,2026-12-30..2026-12-31,1,,,,,yes,0,1,,no,Daily: Air Arabia Istanbul to Multan (£397 17 Dec-30 Dec in the 20 Nov search log)
@@ -67,3 +67,4 @@ p-nap,yes,plans,search,NAP,MUX,2026-12-16,2026-12-30,1,,,,,yes,0,1,,no,Daily: pl
 p-out,yes,plans,search,MAN,BGY MXP LIN CIA,2026-12-14..2026-12-15,oneway,0,,,,,no,0,1,,no,Daily: plans 1-4 first flights from Manchester
 p-back,yes,plans,search,BGY NAP,MAN,2026-12-31,oneway,0,,,,,no,0,1,,no,Daily: plans 1-4 flights home 31 Dec
 p-bgy31,yes,plans,search,BGY,MUX,2026-12-15,2026-12-31,1,,,,,yes,0,1,,no,Plan 4 alternative: flydubai Bergamo 15 Dec 23:00 back 31 Dec
+p-bgy16,yes,plans,search,BGY,MUX,2026-12-16,2026-12-30,1,,,,,yes,0,1,,no,Daily: flydubai Bergamo 16 Dec 12:35 back 30 Dec (£549 on 27 Nov; leave MAN Tue 15 Dec 19:10 via Malpensa)
